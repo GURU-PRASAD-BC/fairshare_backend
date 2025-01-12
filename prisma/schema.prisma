@@ -1,0 +1,116 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Type {
+  Home
+  Trip
+  Couple
+  Office
+  Others
+}
+
+model User {
+  userID       Int             @id @default(autoincrement())
+  name         String
+  email        String          @unique
+  password     String
+  role         String          @default("user")
+  image        String?
+  phone        String?         @unique
+  friends      Friends[]       @relation("UserFriends")
+  friendOf     Friends[]       @relation("FriendOf")
+  groups       Group[]         @relation("CreatorGroups")
+  groupMembers GroupMember[]
+  expenses     Expenses[]      @relation("UserExpenses")
+  splits       ExpenseSplit[]
+  activities   Activities[]
+  balances     Balances[]      @relation("UserBalances")
+  owedBalances Balances[]      @relation("FriendBalances")
+}
+
+model Friends {
+  id       Int   @id @default(autoincrement())
+  userID   Int
+  friendID Int
+  user     User  @relation("UserFriends", fields: [userID], references: [userID])
+  friend   User  @relation("FriendOf", fields: [friendID], references: [userID])
+}
+
+model Group {
+  groupID     Int          @id @default(autoincrement())
+  groupName   String
+  groupType   Type          // "Home", "Trip", "Couple", "Others"
+  groupImage  String?
+  createdBy   Int
+  creator     User          @relation("CreatorGroups", fields: [createdBy], references: [userID])      
+  members     GroupMember[]
+  expenses    Expenses[]
+}
+
+model GroupMember {
+  id      Int   @id @default(autoincrement())
+  groupID Int
+  userID  Int
+  group   Group @relation(fields: [groupID], references: [groupID], onDelete: Cascade)
+  user    User  @relation(fields: [userID], references: [userID])
+}
+
+model Category {
+  categoryID Int        @id @default(autoincrement())
+  name       String
+  expenses   Expenses[] @relation("CategoryExpenses")
+}
+
+model Expenses {
+  expenseID   Int         @id @default(autoincrement())
+  amount      Decimal
+  description String
+  paidBy      Int
+  date        DateTime
+  type        String
+  groupID     Int?
+  group       Group?      @relation(fields: [groupID], references: [groupID])
+  user        User        @relation("UserExpenses", fields: [paidBy], references: [userID])
+  splits      ExpenseSplit[]
+  categoryID  Int
+  category    Category    @relation("CategoryExpenses", fields: [categoryID], references: [categoryID])
+}
+
+model ExpenseSplit {
+  id        Int      @id @default(autoincrement())
+  expenseID Int
+  userID    Int
+  amount    Decimal
+  expense   Expenses @relation(fields: [expenseID], references: [expenseID])
+  user      User     @relation(fields: [userID], references: [userID])
+}
+
+model Balances {
+  id         Int      @id @default(autoincrement())
+  userID     Int
+  friendID   Int
+  amountOwed Decimal
+  user       User     @relation("UserBalances", fields: [userID], references: [userID])
+  friend     User     @relation("FriendBalances", fields: [friendID], references: [userID])
+}
+
+model Activities {
+  activityID  Int      @id @default(autoincrement())
+  userID      Int
+  action      String
+  timestamp   DateTime @default(now())
+  description String
+  user        User     @relation(fields: [userID], references: [userID])
+}
