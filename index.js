@@ -11,6 +11,7 @@ const userRoutes = require("./routes/userRoutes");
 const groupRoutes = require('./routes/groupRoutes');
 const friendRoutes = require("./routes/friendRoutes");
 const expenseRoutes = require('./routes/expenseRoutes');
+const activityRoutes = require("./routes/activityRoutes");
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use('/auth', userRoutes);
 app.use('/group', groupRoutes);
 app.use("/friend", friendRoutes);
 app.use('/expense', expenseRoutes);
+app.use("/activities", activityRoutes);
 
 //checking
 // app.get("/", (req, res) => {

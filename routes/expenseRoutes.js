@@ -9,6 +9,7 @@ const {
   updateExpense,
   getBalances,
   settleExpense,
+  addCategory,
 } = require('../controllers/expenseController');
 
 // Add an expense
@@ -23,7 +24,10 @@ router.delete('/:expenseID', authenticateUser, deleteExpense);
 router.put('/:expenseID', authenticateUser, updateExpense);
 // Get balances for a user
 router.get('/balances', authenticateUser, getBalances);
+
 // Settle an expense
 router.post('/settle', authenticateUser, settleExpense);
+// Add a category
+router.post('/category/add', authenticateUser, addCategory);
 
 module.exports = router;

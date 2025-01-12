@@ -46,7 +46,24 @@ exports.addExpense = async (req, res) => {
           },
         });
       }
+      //log activity for the split
+      await prisma.activities.create({
+        data: {
+          userID: split.userID,
+          action: 'expense_split',
+          description: `You owe ${split.amount} for an expense in group ID ${groupID}.`,
+        },
+      });
     }
+
+    // Log activity for the user who paid the expense
+    await prisma.activities.create({
+      data: {
+        userID: paidBy,
+        action: 'expense_paid',
+        description: `You paid ${amount} for an expense in group ID ${groupID}.`,
+      },
+    });
 
     res.status(201).json(expense);
   } catch (error) {
@@ -184,6 +201,23 @@ exports.settleExpense = async (req, res) => {
         data: { amountOwed: newBalance },
       });
 
+      // Log settlement activity for both users
+      await prisma.activities.create({
+        data: {
+          userID,
+          action: 'settle_expense',
+          description: `You settled ${amount} with friend ID ${friendID}.`,
+        },
+      });
+
+      await prisma.activities.create({
+        data: {
+          userID: friendID,
+          action: 'settle_expense',
+          description: `Your friend (ID ${userID}) settled ${amount} with you.`,
+        },
+      });
+
       return res.status(200).json({ message: "Balance settled successfully.", balance: newBalance });
     }
 
@@ -223,11 +257,48 @@ exports.settleExpense = async (req, res) => {
         data: { amountOwed: totalOwed - amount },
       });
 
+      // Log settlement activity
+      await prisma.activities.create({
+        data: {
+          userID,
+          action: 'settle_group_expense',
+          description: `You settled ${amount} in group ID ${groupID}.`,
+        },
+      });
+
       return res.status(200).json({ message: "Group balance settled successfully." });
     }
   } catch (error) {
     console.error("Error settling expense:", error);
     res.status(500).json({ message: "Failed to settle expense." });
+  }
+};
+
+
+// Add a new category
+exports.addCategory = async (req, res) => {
+  const { name, image } = req.body;
+
+  try {
+    const existingCategory = await prisma.category.findUnique({
+      where: { name },
+    });
+
+    if (existingCategory) {
+      return res.status(400).json({ message: 'Category already exists' });
+    }
+
+    const category = await prisma.category.create({
+      data: {
+        name,
+        image,
+      },
+    });
+
+    res.status(201).json({ message: 'Category added successfully', category });
+  } catch (error) {
+    console.error('Error adding category:', error);
+    res.status(500).json({ message: 'Failed to add category' });
   }
 };
 

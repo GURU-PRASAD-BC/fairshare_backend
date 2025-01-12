@@ -23,6 +23,15 @@ exports.createGroup = async (req, res) => {
       },
     });
 
+     // Log activity for group creation
+     await prisma.activities.create({
+      data: {
+        userID: req.userID,
+        action: "created_group",
+        description: `You created the group "${groupName}"`,
+      },
+    });
+
     // Process and add members
     for (const member of members) {
       let user = null;
@@ -90,6 +99,16 @@ exports.createGroup = async (req, res) => {
             userID: user.userID,
           },
         });
+
+        // Log activity for adding a member
+        await prisma.activities.create({
+          data: {
+            userID: user.userID,
+            action: "added_to_group",
+            description: `You were added to the group "${groupName}" by ${req.user.name}`,
+          },
+        });
+
       } else {
         console.log(`User ${member.email} is already part of the group.`);
       }
@@ -139,6 +158,15 @@ exports.editGroup = async (req, res) => {
               password: 'nopassword',
               email: member.email,
               role: 'user',
+            },
+          });
+
+          // Log activity for adding a member
+          await prisma.activities.create({
+          data: {
+            userID: user.userID,
+            action: "added_to_group",
+            description: `You were added to the group "${groupName}" by ${req.user.name}`,
             },
           });
 

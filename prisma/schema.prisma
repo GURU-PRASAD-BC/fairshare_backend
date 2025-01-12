@@ -70,6 +70,7 @@ model GroupMember {
 model Category {
   categoryID Int        @id @default(autoincrement())
   name       String
+  image      String?
   expenses   Expenses[] @relation("CategoryExpenses")
 }
 
