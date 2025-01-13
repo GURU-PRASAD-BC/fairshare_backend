@@ -1,0 +1,28 @@
+const express = require('express');
+const { isAdmin } = require('../middlewares/authMiddleware'); // Middleware to verify admin access
+const {
+  getAllUsers,
+  blockUser,
+  deleteUser,
+  promoteUser,
+  getAllFeedback,
+  resolveFeedback,
+  getAnalytics,
+} = require('../controllers/adminController');
+
+const router = express.Router();
+
+// User Management
+router.get('/users', isAdmin, getAllUsers);
+router.post('/users/block/:userId', isAdmin, blockUser);
+router.delete('/users/:userId', isAdmin, deleteUser);
+router.post('/users/promote/:userId', isAdmin, promoteUser);
+
+// Feedback Management
+router.get('/feedback', isAdmin, getAllFeedback);
+router.post('/feedback/resolve/:feedbackId', isAdmin, resolveFeedback);
+
+// Analytics
+router.get('/analytics', isAdmin, getAnalytics);
+
+module.exports = router;
