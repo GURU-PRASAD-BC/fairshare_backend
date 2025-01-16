@@ -2,7 +2,7 @@ const prisma = require('../config/prismaClient');
 
 // Add an expense
 exports.addExpense = async (req, res) => {
-  const { amount, description, paidBy, groupID, type, categoryID, splits } = req.body;
+  const { amount, description, paidBy, groupID, type, category, splits,image } = req.body;
 
   try {
     const expense = await prisma.expenses.create({
@@ -13,7 +13,8 @@ exports.addExpense = async (req, res) => {
         date: new Date(),
         type, 
         groupID,
-        categoryID,
+        category,
+        image,
         splits: {
           create: splits.map(split => ({
             userID: split.userID,

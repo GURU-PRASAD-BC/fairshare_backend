@@ -68,13 +68,6 @@ model GroupMember {
   user    User  @relation(fields: [userID], references: [userID])
 }
 
-model Category {
-  categoryID Int        @id @default(autoincrement())
-  name       String
-  image      String?
-  expenses   Expenses[] @relation("CategoryExpenses")
-}
-
 model Expenses {
   expenseID   Int         @id @default(autoincrement())
   amount      Decimal
@@ -86,8 +79,8 @@ model Expenses {
   group       Group?      @relation(fields: [groupID], references: [groupID])
   user        User        @relation("UserExpenses", fields: [paidBy], references: [userID])
   splits      ExpenseSplit[]
-  categoryID  Int
-  category    Category    @relation("CategoryExpenses", fields: [categoryID], references: [categoryID])
+  category  String
+  image  String? 
 }
 
 model ExpenseSplit {

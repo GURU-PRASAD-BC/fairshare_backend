@@ -1,6 +1,6 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const {sendMail} = require("../utils/mailer");
+const {sendMail, sendFriendInvitationMail} = require("../utils/mailer");
 const prisma = require("../config/prismaClient");
 const { signUpSchema, signInSchema } = require("../utils/schemaValidation");
 
@@ -78,24 +78,109 @@ exports.getLoggedInUser = async (req, res) => {
     }
 
     const token = authHeader.split(" ")[1];
-
     const decoded = jwt.verify(token, JWT_SECRET);
 
+    // Fetch user with related groups, friends, expenses, and balances
     const user = await prisma.user.findUnique({
       where: { userID: decoded.id },
-      select: { userID: true, name: true, email: true, image: true, role: true }, 
+      select: {
+        userID: true,
+        name: true,
+        email: true,
+        image: true,
+        role: true,
+        groups: {
+          select: {
+            groupID: true,
+            groupName: true,
+            groupType: true,
+            groupImage: true,
+          },
+        },
+        friends: {
+          select: {
+            friend: {
+              select: {
+                userID: true,
+                name: true,
+                email: true,
+                image: true,
+              },
+            },
+          },
+        },
+        expenses: {
+          select: {
+            expenseID: true,
+            description: true,
+            amount: true,
+            createdAt: true,
+            groupID: true,
+            group: {
+              select: {
+                groupName: true,
+              },
+            },
+          },
+        },
+        balances: {
+          select: {
+            balanceID: true,
+            amount: true,
+            friendID: true,
+            friend: {
+              select: {
+                name: true,
+                email: true,
+                image: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    res.status(200).json({ user });
+    // Format friends list for easier consumption
+    const friendsList = user.friends.map((friend) => friend.friend);
+
+    // Format expenses for easier consumption
+    const formattedExpenses = user.expenses.map((expense) => ({
+      expenseID: expense.expenseID,
+      description: expense.description,
+      amount: expense.amount,
+      createdAt: expense.createdAt,
+      groupID: expense.groupID,
+      groupName: expense.group?.groupName || null,
+    }));
+
+    // Format balances for easier consumption
+    const formattedBalances = user.balances.map((balance) => ({
+      balanceID: balance.balanceID,
+      amount: balance.amount,
+      friendID: balance.friendID,
+      friendName: balance.friend.name,
+      friendEmail: balance.friend.email,
+      friendImage: balance.friend.image,
+    }));
+
+    res.status(200).json({
+      user: {
+        ...user,
+        friends: friendsList, // Replace nested structure with a flat list
+        expenses: formattedExpenses,
+        balances: formattedBalances,
+      },
+    });
   } catch (error) {
     console.error("Error fetching logged-in user:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
 
 //Update the user
 exports.updateUser = async (req, res) => {
@@ -268,3 +353,42 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
+// Invite Friend
+exports.inviteFriend = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: "Email is required" });
+  }
+
+  try {
+    await sendFriendInvitationMail(email);
+    res.status(200).json({ message: "Invitation sent successfully" });
+  } catch (error) {
+    console.error("Error sending invitation email:", error);
+    res.status(500).json({ error: "Failed to send invitation email" });
+  }
+};
+
+// Add Feedback
+exports.addFeedback = async (req, res) => {
+  const { userId, message } = req.body;
+
+  if (!userId || !message) {
+    return res.status(400).json({ error: "User ID and message are required" });
+  }
+
+  try {
+    const feedback = await prisma.feedback.create({
+      data: {
+        userId,
+        message,
+      },
+    });
+
+    res.status(201).json({ message: "Feedback submitted successfully", feedback });
+  } catch (error) {
+    console.error("Error adding feedback:", error);
+    res.status(500).json({ error: "Failed to add feedback" });
+  }
+};

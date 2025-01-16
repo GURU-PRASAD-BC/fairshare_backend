@@ -39,4 +39,9 @@ router.delete("/delete", deleteUser);
 router.post("/forgot-password", sendPasswordResetEmail);
 router.post("/reset-password", resetPassword);
 
+// Send Friend Invitation
+router.post("/invite-friend", inviteFriend);
+// Add Feedback
+router.post("/feedback", addFeedback);
+
 module.exports = router;
