@@ -29,6 +29,7 @@ model User {
   role         String          @default("user")
   image        String?
   phone        String?         @unique
+  isBlocked    Boolean         @default(false)
   friends      Friends[]       @relation("UserFriends")
   friendOf     Friends[]       @relation("FriendOf")
   groups       Group[]         @relation("CreatorGroups")
@@ -73,7 +74,7 @@ model Expenses {
   amount      Decimal
   description String
   paidBy      Int
-  date        DateTime
+  date        DateTime    @default(now()) 
   type        String
   groupID     Int?
   group       Group?      @relation(fields: [groupID], references: [groupID])

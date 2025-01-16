@@ -4,7 +4,15 @@ const prisma = require('../config/prismaClient');
 // User Management
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await prisma.user.findMany();
+    const users = await prisma.user.findMany({
+      select: {
+        userID: true,
+        name: true,
+        email: true,
+        image: true,
+        role: true,
+      }
+    });
     res.status(200).json(users);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch users" });

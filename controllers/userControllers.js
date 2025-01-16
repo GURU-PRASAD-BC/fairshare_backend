@@ -114,7 +114,7 @@ exports.getLoggedInUser = async (req, res) => {
             expenseID: true,
             description: true,
             amount: true,
-            createdAt: true,
+            date: true,
             groupID: true,
             group: {
               select: {
@@ -125,8 +125,8 @@ exports.getLoggedInUser = async (req, res) => {
         },
         balances: {
           select: {
-            balanceID: true,
-            amount: true,
+            id: true,
+            amountOwed: true,
             friendID: true,
             friend: {
               select: {
