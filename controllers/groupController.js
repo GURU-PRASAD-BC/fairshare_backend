@@ -247,7 +247,6 @@ exports.deleteGroup = async (req, res) => {
   }
 };
 
-// View group details
 exports.viewGroupDetails = async (req, res) => {
   const { groupID } = req.params;
 
@@ -274,18 +273,26 @@ exports.viewGroupDetails = async (req, res) => {
       return res.status(404).json({ message: 'Group not found' });
     }
 
-    const isMember = group.members.some(member => member.userID === req.userID);
+    // Check if the user is authorized to view the group
+    const isMember = group.members.some(member => member.user.userID === req.userID);
 
     if (!isMember && group.createdBy !== req.userID) {
       return res.status(403).json({ message: 'You are not authorized to view this group' });
     }
 
-    res.status(200).json({ group });
+    // Restructure the members to include only the user details
+    const groupWithFilteredMembers = {
+      ...group,
+      members: group.members.map(member => member.user),
+    };
+
+    res.status(200).json({ group: groupWithFilteredMembers });
   } catch (error) {
     console.error('Error viewing group details:', error);
     res.status(500).json({ message: 'Failed to fetch group details' });
   }
 };
+
 
 // View all groups related to the user
 exports.viewUserGroups = async (req, res) => {
