@@ -27,7 +27,6 @@ router.get('/balances', authenticateUser, getBalances);
 
 // Settle an expense
 router.post('/settle', authenticateUser, settleExpense);
-// Add a category
-router.post('/category/add', authenticateUser, addCategory);
+
 
 module.exports = router;

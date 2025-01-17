@@ -255,19 +255,20 @@ exports.viewGroupDetails = async (req, res) => {
     const group = await prisma.group.findUnique({
       where: { groupID: parseInt(groupID) },
       include: {
-        members: { include: 
-          { 
+        members: {
+          include: {
             user: {
-            select: {
-              userID: true,
-              name: true,
-              email: true,
-              image:true,
-            },} 
+              select: {
+                userID: true,
+                name: true,
+                email: true,
+                image: true,
+              },
+            },
+          },
         },
       },
-    }
-  });
+    });
 
     if (!group) {
       return res.status(404).json({ message: 'Group not found' });
