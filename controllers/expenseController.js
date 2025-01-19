@@ -2,8 +2,8 @@ const prisma = require('../config/prismaClient');
 
 // Add an expense
 exports.addExpense = async (req, res) => {
-  const { amount, description, paidBy, groupID, type, category, splits,image } = req.body;
-  
+  const { amount, description, paidBy, groupID, type, category, splits, image } = req.body;
+
   try {
     const expense = await prisma.expenses.create({
       data: {
@@ -11,7 +11,7 @@ exports.addExpense = async (req, res) => {
         description,
         paidBy,
         date: new Date(),
-        type, 
+        type,
         groupID,
         category,
         image,
@@ -26,6 +26,8 @@ exports.addExpense = async (req, res) => {
 
     // Update balances
     for (const split of splits) {
+      if (split.userID === paidBy) continue; // Skip updating balance for the user who paid
+
       const existingBalance = await prisma.balances.findFirst({
         where: {
           userID: split.userID,
@@ -33,21 +35,33 @@ exports.addExpense = async (req, res) => {
         },
       });
 
+      const reverseBalance = await prisma.balances.findFirst({
+        where: {
+          userID: paidBy,
+          friendID: split.userID,
+        },
+      });
+
+      const netBalance = reverseBalance
+        ? reverseBalance.amountOwed - split.amount
+        : parseInt(split.amount);
+
       if (existingBalance) {
         await prisma.balances.update({
           where: { id: existingBalance.id },
-          data: { amountOwed: parseInt(existingBalance.amountOwed) + parseInt(split.amount) },
+          data: { amountOwed: parseInt(existingBalance.amountOwed) + netBalance },
         });
       } else {
         await prisma.balances.create({
           data: {
             userID: split.userID,
             friendID: paidBy,
-            amountOwed: parseInt(split.amount),
+            amountOwed: netBalance,
           },
         });
       }
-      //log activity for the split
+
+      // Log activity for the split
       await prisma.activities.create({
         data: {
           userID: split.userID,
@@ -73,7 +87,6 @@ exports.addExpense = async (req, res) => {
   }
 };
 
-// Get expenses by group
 exports.getExpensesByGroup = async (req, res) => {
   const { groupID } = req.params;
 
@@ -272,6 +285,50 @@ exports.settleExpense = async (req, res) => {
   } catch (error) {
     console.error("Error settling expense:", error);
     res.status(500).json({ message: "Failed to settle expense." });
+  }
+};
+
+// Get owes, owed-to summary
+exports.getBalancesSummary = async (req, res) => {
+  const { userID } = req;
+
+  try {
+    const balances = await prisma.balances.findMany({
+      where: {
+        OR: [
+          { userID: Number(userID) },
+          { friendID: Number(userID) },
+        ],
+      },
+    });
+
+    let totalOwes = 0;
+    let totalOwedTo = 0;
+    const summary = {};
+
+    balances.forEach(balance => {
+      if (balance.userID === Number(userID)) {
+        totalOwes += balance.amountOwed;
+        summary[balance.friendID] = (summary[balance.friendID] || 0) - balance.amountOwed;
+      } else {
+        totalOwedTo += balance.amountOwed;
+        summary[balance.userID] = (summary[balance.userID] || 0) + balance.amountOwed;
+      }
+    });
+
+    const friendBalances = Object.keys(summary).map(friendID => ({
+      friendID,
+      balance: summary[friendID],
+    }));
+
+    res.status(200).json({
+      totalOwes,
+      totalOwedTo,
+      friendBalances,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch balances summary' });
   }
 };
 
