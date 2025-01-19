@@ -1,3 +1,4 @@
+const { date } = require('joi');
 const prisma = require('../config/prismaClient');
 
 // Add an expense
@@ -10,7 +11,7 @@ exports.addExpense = async (req, res) => {
         amount,
         description,
         paidBy,
-        date,
+        date: new Date(),
         type,
         groupID,
         category,
