@@ -9,21 +9,20 @@ exports.addExpense = async (req, res) => {
       data: {
         amount,
         description,
-        paidBy,
         date: new Date(),
-        type, 
-        groupID,
+        type,
         category,
         image,
         splits: {
-          create: splits.map(split => ({
+          create: splits.map((split) => ({
             userID: split.userID,
             amount: split.amount,
           })),
         },
         user: {
-          connect: { userID: paidBy }, // Ensure user with userID: 8 exists in User table
+          connect: { userID: paidBy },
         },
+        group: groupID ? { connect: { groupID } } : undefined, 
       },
     });
 
