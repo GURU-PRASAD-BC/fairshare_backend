@@ -80,7 +80,7 @@ exports.getExpensesByGroup = async (req, res) => {
   try {
     const expenses = await prisma.expenses.findMany({
       where: { groupID: Number(groupID) },
-      include: { category: true, splits: true, user: true },
+      include: {splits: true },
     });
 
     res.status(200).json(expenses);
@@ -97,7 +97,7 @@ exports.getUserExpenses = async (req, res) => {
   try {
     const expenses = await prisma.expenses.findMany({
       where: { paidBy: Number(userID) },
-      include: { category: true, splits: true, user: true },
+      include: {splits: true},
     });
 
     res.status(200).json(expenses);
