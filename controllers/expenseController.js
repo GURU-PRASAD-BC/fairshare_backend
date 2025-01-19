@@ -4,15 +4,6 @@ const prisma = require('../config/prismaClient');
 exports.addExpense = async (req, res) => {
   const { amount, description, paidBy, groupID, type, category, splits,image } = req.body;
 
-  const existingUser = await prisma.user.findUnique({ where: { userID: paidBy } });
-if (!existingUser) {
-  throw new Error("User with userID 8 does not exist");
-}
-else{
-  console.log("Good");
-}
-
-
   try {
     const expense = await prisma.expenses.create({
       data: {
@@ -29,6 +20,9 @@ else{
             userID: split.userID,
             amount: split.amount,
           })),
+        },
+        user: {
+          connect: { userID: paidBy }, // Ensure user with userID: 8 exists in User table
         },
       },
     });
