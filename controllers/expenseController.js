@@ -10,19 +10,22 @@ exports.addExpense = async (req, res) => {
         amount,
         description,
         paidBy,
-        date: new Date(),
-        type, 
+        date,
+        type,
         groupID,
         category,
         image,
         splits: {
-          create: splits.map(split => ({
+          create: splits.map((split) => ({
             userID: split.userID,
             amount: split.amount,
           })),
         },
+        // Check if 'user' is required here
       },
     });
+    console.log("Expense created:", expense);
+  
 
     // Update balances
     for (const split of splits) {
