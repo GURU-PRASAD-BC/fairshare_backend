@@ -36,14 +36,14 @@ exports.addExpense = async (req, res) => {
       if (existingBalance) {
         await prisma.balances.update({
           where: { id: existingBalance.id },
-          data: { amountOwed: existingBalance.amountOwed + split.amount },
+          data: { amountOwed: parseInt(existingBalance.amountOwed) + parseInt(split.amount) },
         });
       } else {
         await prisma.balances.create({
           data: {
             userID: split.userID,
             friendID: paidBy,
-            amountOwed: split.amount,
+            amountOwed: parseInt(split.amount),
           },
         });
       }
