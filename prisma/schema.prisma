@@ -71,7 +71,7 @@ model GroupMember {
 
 model Expenses {
   expenseID   Int         @id @default(autoincrement())
-  amount      Decimal
+  amount      Decimal     @db.Decimal(20, 2)
   description String
   paidBy      Int
   date        DateTime    @default(now()) 
@@ -88,7 +88,7 @@ model ExpenseSplit {
   id        Int      @id @default(autoincrement())
   expenseID Int
   userID    Int
-  amount    Decimal
+  amount    Decimal  @db.Decimal(20, 2)
   expense   Expenses @relation(fields: [expenseID], references: [expenseID])
   user      User     @relation(fields: [userID], references: [userID])
 }
@@ -97,7 +97,7 @@ model Balances {
   id         Int      @id @default(autoincrement())
   userID     Int
   friendID   Int
-  amountOwed Decimal
+  amountOwed Decimal  @db.Decimal(20, 2)
   user       User     @relation("UserBalances", fields: [userID], references: [userID])
   friend     User     @relation("FriendBalances", fields: [friendID], references: [userID])
 }
