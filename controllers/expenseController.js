@@ -266,7 +266,7 @@ exports.getBalanceWithFriend = async (req, res) => {
 
 //settle expenses
 exports.settleExpense = async (req, res) => {
-  const { userID } = req; 
+  const  userID = req.user.userID; 
   const { friendID, groupID, amount } = req.body;
 
   try {
@@ -453,31 +453,48 @@ exports.getBalancesSummary = async (req, res) => {
   }
 };
 
-// Add a new category
-exports.addCategory = async (req, res) => {
-  const { name, image } = req.body;
+// Settle all owes for a user
+exports.settleAllOwes = async (req, res) => {
+  const { userID } = req;
 
   try {
-    const existingCategory = await prisma.category.findUnique({
-      where: { name },
-    });
-
-    if (existingCategory) {
-      return res.status(400).json({ message: 'Category already exists' });
-    }
-
-    const category = await prisma.category.create({
-      data: {
-        name,
-        image,
+    // Fetch all balances where the user owes money
+    const balances = await prisma.balances.findMany({
+      where: {
+        userID: Number(userID),
+        amountOwed: { gt: 0 },
       },
     });
 
-    res.status(201).json({ message: 'Category added successfully', category });
+    if (balances.length === 0) {
+      return res.status(200).json({ message: 'No outstanding debts to settle.' });
+    }
+
+    // Update all balances to settle owes
+    const settlePromises = balances.map((balance) =>
+      prisma.balances.update({
+        where: { id: balance.id }, 
+        data: { amountOwed: 0 }, // Set the amount owed to zero
+      })
+    );
+
+    await Promise.all(settlePromises);
+
+    // Log activity for the payer
+    await prisma.activities.create({
+      data: {
+        userID: userID,
+        action: 'all expense_paid',
+        description: `You paid All outstanding debts`,
+      },
+    });
+
+    res.status(200).json({ message: 'All outstanding debts have been settled.' });
   } catch (error) {
-    console.error('Error adding category:', error);
-    res.status(500).json({ message: 'Failed to add category' });
+    console.error(error);
+    res.status(500).json({ message: 'Failed to settle debts.' });
   }
 };
+
 
 
