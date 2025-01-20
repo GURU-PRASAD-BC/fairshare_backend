@@ -155,8 +155,12 @@ exports.deleteExpense = async (req, res) => {
   const { expenseID } = req.params;
 
   try {
+    await prisma.expenseSplit.deleteMany({
+      where: { expenseID: Number(expenseID) }
+    });
+
     await prisma.expenses.delete({
-      where: { expenseID: Number(expenseID) },
+      where: { expenseID: Number(expenseID) }
     });
 
     res.status(200).json({ message: 'Expense deleted successfully' });
