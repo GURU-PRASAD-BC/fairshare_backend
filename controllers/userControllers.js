@@ -191,7 +191,7 @@ exports.updateUser = async (req, res) => {
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({ error: "Authorization token is missing or invalid" });
     }
-
+  
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, JWT_SECRET);
 
