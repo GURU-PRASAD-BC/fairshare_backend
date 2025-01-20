@@ -1,0 +1,168 @@
+{
+	"id": "cd5cc509-4346-4938-ad5a-22d192e8f389",
+	"name": "FinestShare",
+	"timestamp": "2025-01-20T17:41:35.032Z",
+	"collection_id": "38449522-e9951066-2b4c-4656-b36f-9a6cee592430",
+	"folder_id": "38449522-b16b1b2d-5ef0-47f6-8c81-01af8b28466c",
+	"environment_id": "0",
+	"totalPass": 3,
+	"delay": 0,
+	"persist": true,
+	"status": "finished",
+	"startedAt": "2025-01-20T17:41:24.766Z",
+	"totalFail": 1,
+	"results": [
+		{
+			"id": "592b1882-e344-43d9-8912-91b8e1658f2e",
+			"name": "create-group",
+			"url": "http://localhost:8080/group/create",
+			"time": 6812,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {
+				"Group created successfully": true
+			},
+			"testPassFailCounts": {
+				"Group created successfully": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				6812
+			],
+			"allTests": [
+				{
+					"Group created successfully": true
+				}
+			]
+		},
+		{
+			"id": "ed9bacc9-21da-4c1e-9dbc-6bedfd521f0f",
+			"name": "edit group",
+			"url": "http://localhost:8080/group/24/edit",
+			"time": 201,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				201
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "3df51188-7050-4d97-b127-d4b3ef5633ea",
+			"name": "view_group_details",
+			"url": "http://localhost:8080/group/10/details",
+			"time": 733,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Group details fetched successfully": false
+			},
+			"testPassFailCounts": {
+				"Group details fetched successfully": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				733
+			],
+			"allTests": [
+				{
+					"Group details fetched successfully": false
+				}
+			]
+		},
+		{
+			"id": "d4fe2b70-e4f5-4fff-bb72-256f2df25b6c",
+			"name": "user's groups",
+			"url": "http://localhost:8080/group/user/groups",
+			"time": 1000,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"User groups fetched successfully": true
+			},
+			"testPassFailCounts": {
+				"User groups fetched successfully": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				1000
+			],
+			"allTests": [
+				{
+					"User groups fetched successfully": true
+				}
+			]
+		},
+		{
+			"id": "14a5ddb7-9e7e-4120-875b-afedffb513b7",
+			"name": "delete group",
+			"url": "http://localhost:8080/group/10",
+			"time": 1002,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Group deleted successfully": true
+			},
+			"testPassFailCounts": {
+				"Group deleted successfully": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				1002
+			],
+			"allTests": [
+				{
+					"Group deleted successfully": true
+				}
+			]
+		}
+	],
+	"count": 1,
+	"totalTime": 9748,
+	"collection": {
+		"requests": [
+			{
+				"id": "592b1882-e344-43d9-8912-91b8e1658f2e",
+				"method": "POST"
+			},
+			{
+				"id": "ed9bacc9-21da-4c1e-9dbc-6bedfd521f0f",
+				"method": "PUT"
+			},
+			{
+				"id": "3df51188-7050-4d97-b127-d4b3ef5633ea",
+				"method": "GET"
+			},
+			{
+				"id": "d4fe2b70-e4f5-4fff-bb72-256f2df25b6c",
+				"method": "GET"
+			},
+			{
+				"id": "14a5ddb7-9e7e-4120-875b-afedffb513b7",
+				"method": "DELETE"
+			}
+		]
+	}
+}

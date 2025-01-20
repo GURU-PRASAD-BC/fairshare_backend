@@ -186,7 +186,7 @@ exports.updateExpense = async (req, res) => {
       data: {description, category },
     });
 
-    console.log(updatedExpense);
+    // console.log(updatedExpense);
     res.status(200).json(updatedExpense);
   } catch (error) {
     console.error(error);

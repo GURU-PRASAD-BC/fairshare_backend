@@ -1,0 +1,270 @@
+{
+	"id": "76cac3c7-4a73-4389-aeca-62d5902f904d",
+	"name": "FinestShare",
+	"timestamp": "2025-01-20T18:08:29.115Z",
+	"collection_id": "38449522-e9951066-2b4c-4656-b36f-9a6cee592430",
+	"folder_id": "38449522-26a8783a-6442-4888-8aef-b018268194ae",
+	"environment_id": "0",
+	"totalPass": 7,
+	"delay": 0,
+	"persist": true,
+	"status": "finished",
+	"startedAt": "2025-01-20T18:08:18.778Z",
+	"totalFail": 1,
+	"results": [
+		{
+			"id": "23529c8a-e063-4e14-acaa-d063653f0ffd",
+			"name": "add_Expense",
+			"url": "http://localhost:8080/expense/add",
+			"time": 3251,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {
+				"Response status is 200": true
+			},
+			"testPassFailCounts": {
+				"Response status is 200": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				3251
+			],
+			"allTests": [
+				{
+					"Response status is 200": true
+				}
+			]
+		},
+		{
+			"id": "702a0483-74bb-4542-84e2-789a5fa80dca",
+			"name": "get_group_expense",
+			"url": "http://localhost:8080/expense/group/2",
+			"time": 671,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response status is 200": true
+			},
+			"testPassFailCounts": {
+				"Response status is 200": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				671
+			],
+			"allTests": [
+				{
+					"Response status is 200": true
+				}
+			]
+		},
+		{
+			"id": "4d6a76a6-14da-4a38-831a-9bb70e324a8f",
+			"name": "get_user_balances",
+			"url": "http://localhost:8080/expense/balances",
+			"time": 747,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response status is 200": true
+			},
+			"testPassFailCounts": {
+				"Response status is 200": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				747
+			],
+			"allTests": [
+				{
+					"Response status is 200": true
+				}
+			]
+		},
+		{
+			"id": "9812e3ba-be7e-4b9e-81a7-bce852029dd1",
+			"name": "user_expense",
+			"url": "http://localhost:8080/expense/user",
+			"time": 849,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response status is 200": true
+			},
+			"testPassFailCounts": {
+				"Response status is 200": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				849
+			],
+			"allTests": [
+				{
+					"Response status is 200": true
+				}
+			]
+		},
+		{
+			"id": "7a26468e-a2ab-4623-9b4d-1b61e662e886",
+			"name": "user_balances-summary",
+			"url": "http://localhost:8080/expense/balances-summary",
+			"time": 2540,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response status is 200": true
+			},
+			"testPassFailCounts": {
+				"Response status is 200": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				2540
+			],
+			"allTests": [
+				{
+					"Response status is 200": true
+				}
+			]
+		},
+		{
+			"id": "12af71f7-6082-4361-92f8-90df8cf0deb8",
+			"name": "get_balances_withFriend",
+			"url": "http://localhost:8080/expense/balances/1",
+			"time": 597,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response status is 200": true
+			},
+			"testPassFailCounts": {
+				"Response status is 200": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				597
+			],
+			"allTests": [
+				{
+					"Response status is 200": true
+				}
+			]
+		},
+		{
+			"id": "c6577185-b0d6-4772-b538-2b7cf9d43c82",
+			"name": "edit_expense",
+			"url": "http://localhost:8080/expense/18",
+			"time": 556,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response status is 200": true
+			},
+			"testPassFailCounts": {
+				"Response status is 200": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				556
+			],
+			"allTests": [
+				{
+					"Response status is 200": true
+				}
+			]
+		},
+		{
+			"id": "04d9e472-aee7-4718-ba74-ed261b255939",
+			"name": "delete expense",
+			"url": "http://localhost:8080/expense/3",
+			"time": 544,
+			"responseCode": {
+				"code": 500,
+				"name": "Internal Server Error"
+			},
+			"tests": {
+				"Response status is 200": false
+			},
+			"testPassFailCounts": {
+				"Response status is 200": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				544
+			],
+			"allTests": [
+				{
+					"Response status is 200": false
+				}
+			]
+		}
+	],
+	"count": 1,
+	"totalTime": 9755,
+	"collection": {
+		"requests": [
+			{
+				"id": "23529c8a-e063-4e14-acaa-d063653f0ffd",
+				"method": "POST"
+			},
+			{
+				"id": "702a0483-74bb-4542-84e2-789a5fa80dca",
+				"method": "GET"
+			},
+			{
+				"id": "4d6a76a6-14da-4a38-831a-9bb70e324a8f",
+				"method": "GET"
+			},
+			{
+				"id": "9812e3ba-be7e-4b9e-81a7-bce852029dd1",
+				"method": "GET"
+			},
+			{
+				"id": "7a26468e-a2ab-4623-9b4d-1b61e662e886",
+				"method": "GET"
+			},
+			{
+				"id": "12af71f7-6082-4361-92f8-90df8cf0deb8",
+				"method": "GET"
+			},
+			{
+				"id": "c6577185-b0d6-4772-b538-2b7cf9d43c82",
+				"method": "PUT"
+			},
+			{
+				"id": "04d9e472-aee7-4718-ba74-ed261b255939",
+				"method": "DELETE"
+			}
+		]
+	}
+}

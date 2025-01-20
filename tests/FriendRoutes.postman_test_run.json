@@ -1,0 +1,127 @@
+{
+	"id": "aa27a364-7d7e-42ce-be03-d6b2093f1a08",
+	"name": "FinestShare",
+	"timestamp": "2025-01-20T17:56:08.029Z",
+	"collection_id": "38449522-e9951066-2b4c-4656-b36f-9a6cee592430",
+	"folder_id": "38449522-48e865b9-8233-405b-bde6-bd80b9a1cc1a",
+	"environment_id": "0",
+	"totalPass": 5,
+	"delay": 0,
+	"persist": true,
+	"status": "finished",
+	"startedAt": "2025-01-20T17:56:01.694Z",
+	"totalFail": 0,
+	"results": [
+		{
+			"id": "b42653a2-a3ac-40ae-92b8-66bcdde3a97b",
+			"name": "get all friends",
+			"url": "http://localhost:8080/friend/",
+			"time": 496,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response status is 200": true
+			},
+			"testPassFailCounts": {
+				"Response status is 200": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				496
+			],
+			"allTests": [
+				{
+					"Response status is 200": true
+				}
+			]
+		},
+		{
+			"id": "e8f22bf2-035b-4312-a917-8c1a23f584bd",
+			"name": "add_friend",
+			"url": "http://localhost:8080/friend/add",
+			"time": 5030,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response status is 201 or 200": true,
+				"Message is correct": true
+			},
+			"testPassFailCounts": {
+				"Response status is 201 or 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Message is correct": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				5030
+			],
+			"allTests": [
+				{
+					"Response status is 201 or 200": true,
+					"Message is correct": true
+				}
+			]
+		},
+		{
+			"id": "b90f3352-72a1-494d-a8db-a8d9017af31a",
+			"name": "remove friend",
+			"url": "http://localhost:8080/friend/remove/8",
+			"time": 257,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response status is 200": true,
+				"Message is correct": true
+			},
+			"testPassFailCounts": {
+				"Response status is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Message is correct": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				257
+			],
+			"allTests": [
+				{
+					"Response status is 200": true,
+					"Message is correct": true
+				}
+			]
+		}
+	],
+	"count": 1,
+	"totalTime": 5783,
+	"collection": {
+		"requests": [
+			{
+				"id": "b42653a2-a3ac-40ae-92b8-66bcdde3a97b",
+				"method": "GET"
+			},
+			{
+				"id": "e8f22bf2-035b-4312-a917-8c1a23f584bd",
+				"method": "POST"
+			},
+			{
+				"id": "b90f3352-72a1-494d-a8db-a8d9017af31a",
+				"method": "DELETE"
+			}
+		]
+	}
+}

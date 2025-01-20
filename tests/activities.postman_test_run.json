@@ -1,0 +1,53 @@
+{
+	"id": "31281b98-1fa8-4721-ad02-9f97eb0e2a2f",
+	"name": "FinestShare",
+	"timestamp": "2025-01-20T18:11:22.638Z",
+	"collection_id": "38449522-e9951066-2b4c-4656-b36f-9a6cee592430",
+	"folder_id": "38449522-8669ab2e-0844-4eb1-a494-d8a3e720f0ff",
+	"environment_id": "0",
+	"totalPass": 1,
+	"delay": 0,
+	"persist": true,
+	"status": "finished",
+	"startedAt": "2025-01-20T18:11:21.679Z",
+	"totalFail": 0,
+	"results": [
+		{
+			"id": "7edb40aa-ac8d-4c83-8d54-b25172a7150b",
+			"name": "get_user_activities",
+			"url": "http://localhost:8080/activities/",
+			"time": 530,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Response status is 200": true
+			},
+			"testPassFailCounts": {
+				"Response status is 200": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				530
+			],
+			"allTests": [
+				{
+					"Response status is 200": true
+				}
+			]
+		}
+	],
+	"count": 1,
+	"totalTime": 530,
+	"collection": {
+		"requests": [
+			{
+				"id": "7edb40aa-ac8d-4c83-8d54-b25172a7150b",
+				"method": "GET"
+			}
+		]
+	}
+}

@@ -1,0 +1,303 @@
+{
+	"id": "15fbd65e-0bda-4a4d-9e35-7f7b30fb91ae",
+	"name": "FinestShare",
+	"timestamp": "2025-01-20T17:31:46.133Z",
+	"collection_id": "38449522-e9951066-2b4c-4656-b36f-9a6cee592430",
+	"folder_id": "38449522-5d2f47eb-55d4-4051-b0bb-a12a98124b33",
+	"environment_id": "0",
+	"totalPass": 14,
+	"delay": 0,
+	"persist": true,
+	"status": "finished",
+	"startedAt": "2025-01-20T17:31:33.612Z",
+	"totalFail": 0,
+	"results": [
+		{
+			"id": "9576b844-4947-4ebb-81d8-64bf8c90dbf3",
+			"name": "normal_signup",
+			"url": "http://localhost:8080/auth/signup",
+			"time": 452,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {
+				"Status code is 201": true,
+				"Response contains success message": true
+			},
+			"testPassFailCounts": {
+				"Status code is 201": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response contains success message": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				452
+			],
+			"allTests": [
+				{
+					"Status code is 201": true,
+					"Response contains success message": true
+				}
+			]
+		},
+		{
+			"id": "005814fb-07b4-4ed4-8b68-61c71baad55b",
+			"name": "normal_login",
+			"url": "http://localhost:8080/auth/login",
+			"time": 247,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true,
+				"Response contains token": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response contains token": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				247
+			],
+			"allTests": [
+				{
+					"Status code is 200": true,
+					"Response contains token": true
+				}
+			]
+		},
+		{
+			"id": "c6dd4d4c-9481-4183-b2f6-235491cf1d94",
+			"name": "forgot-password",
+			"url": "http://localhost:8080/auth/forgot-password",
+			"time": 3887,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true,
+				"Response confirms email sent": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response confirms email sent": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				3887
+			],
+			"allTests": [
+				{
+					"Status code is 200": true,
+					"Response confirms email sent": true
+				}
+			]
+		},
+		{
+			"id": "c4818d9f-5c73-494e-b00b-feea4be0b109",
+			"name": "getLoggedUser Info",
+			"url": "http://localhost:8080/auth/me",
+			"time": 718,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true,
+				"Response contains user data": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response contains user data": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				718
+			],
+			"allTests": [
+				{
+					"Status code is 200": true,
+					"Response contains user data": true
+				}
+			]
+		},
+		{
+			"id": "82618257-6ec6-4047-a056-92908c178cd6",
+			"name": "update-user",
+			"url": "http://localhost:8080/auth/update",
+			"time": 165,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true,
+				"Response contains updated user data": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response contains updated user data": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				165
+			],
+			"allTests": [
+				{
+					"Status code is 200": true,
+					"Response contains updated user data": true
+				}
+			]
+		},
+		{
+			"id": "88f0cb6a-e3c8-4f26-94ba-022774ecd78c",
+			"name": "invite-friend",
+			"url": "http://localhost:8080/auth/invite-friend",
+			"time": 4896,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true,
+				"Response confirms invitation sent": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response confirms invitation sent": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				4896
+			],
+			"allTests": [
+				{
+					"Status code is 200": true,
+					"Response confirms invitation sent": true
+				}
+			]
+		},
+		{
+			"id": "577cc988-b354-400b-b3b4-57dd7e24a032",
+			"name": "submit feedback",
+			"url": "http://localhost:8080/auth/feedback",
+			"time": 146,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {
+				"Status code is 201": true,
+				"Response confirms feedback submission": true
+			},
+			"testPassFailCounts": {
+				"Status code is 201": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response confirms feedback submission": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				146
+			],
+			"allTests": [
+				{
+					"Status code is 201": true,
+					"Response confirms feedback submission": true
+				}
+			]
+		},
+		{
+			"id": "3c571c98-1fc8-4d6f-bdcd-76c034f4ac5b",
+			"name": "delete User",
+			"url": "http://localhost:8080/auth/delete",
+			"time": 1453,
+			"responseCode": {
+				"code": 500,
+				"name": "Internal Server Error"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				1453
+			],
+			"allTests": [
+				{}
+			]
+		}
+	],
+	"count": 1,
+	"totalTime": 11964,
+	"collection": {
+		"requests": [
+			{
+				"id": "9576b844-4947-4ebb-81d8-64bf8c90dbf3",
+				"method": "POST"
+			},
+			{
+				"id": "005814fb-07b4-4ed4-8b68-61c71baad55b",
+				"method": "POST"
+			},
+			{
+				"id": "c6dd4d4c-9481-4183-b2f6-235491cf1d94",
+				"method": "POST"
+			},
+			{
+				"id": "c4818d9f-5c73-494e-b00b-feea4be0b109",
+				"method": "GET"
+			},
+			{
+				"id": "82618257-6ec6-4047-a056-92908c178cd6",
+				"method": "PUT"
+			},
+			{
+				"id": "88f0cb6a-e3c8-4f26-94ba-022774ecd78c",
+				"method": "POST"
+			},
+			{
+				"id": "577cc988-b354-400b-b3b4-57dd7e24a032",
+				"method": "POST"
+			},
+			{
+				"id": "3c571c98-1fc8-4d6f-bdcd-76c034f4ac5b",
+				"method": "DELETE"
+			}
+		]
+	}
+}
