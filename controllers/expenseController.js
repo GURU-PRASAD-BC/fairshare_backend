@@ -24,54 +24,65 @@ exports.addExpense = async (req, res) => {
       },
     });
 
-    // Update balances
     for (const split of splits) {
-      if (split.userID === paidBy) continue; // Skip updating balance for the user who paid
+      if (split.userID === paidBy) continue; // Skip the payer
 
+      // Check for existing balances
       const existingBalance = await prisma.balances.findFirst({
-        where: {
-          userID: split.userID,
-          friendID: paidBy,
-        },
+        where: { userID: split.userID, friendID: paidBy },
       });
 
       const reverseBalance = await prisma.balances.findFirst({
-        where: {
-          userID: paidBy,
-          friendID: split.userID,
-        },
+        where: { userID: paidBy, friendID: split.userID },
       });
 
-      const netBalance = reverseBalance
-        ? reverseBalance.amountOwed - split.amount
-        : parseInt(split.amount);
+      if (reverseBalance) {
+        // Subtract from the reverse balance to calculate the net balance
+        const netAmount = reverseBalance.amountOwed - split.amount;
 
-      if (existingBalance) {
+        if (netAmount > 0) {
+          // Update reverse balance with reduced amount
+          await prisma.balances.update({
+            where: { id: reverseBalance.id },
+            data: { amountOwed: netAmount },
+          });
+        } else if (netAmount < 0) {
+          // Delete reverse balance and create a new forward balance
+          await prisma.balances.delete({
+            where: { id: reverseBalance.id },
+          });
+          await prisma.balances.create({
+            data: {
+              userID: split.userID,
+              friendID: paidBy,
+              amountOwed: -netAmount, // Positive amount for the forward balance
+            },
+          });
+        } else {
+          // If netAmount is 0, delete the reverse balance
+          await prisma.balances.delete({
+            where: { id: reverseBalance.id },
+          });
+        }
+      } else if (existingBalance) {
+        // If no reverse balance, update the forward balance
         await prisma.balances.update({
           where: { id: existingBalance.id },
-          data: { amountOwed: parseInt(existingBalance.amountOwed) + netBalance },
+          data: { amountOwed: existingBalance.amountOwed + split.amount },
         });
       } else {
+        // Create a new balance if neither exists
         await prisma.balances.create({
           data: {
             userID: split.userID,
             friendID: paidBy,
-            amountOwed: netBalance,
+            amountOwed: split.amount,
           },
         });
       }
-
-      // Log activity for the split
-      await prisma.activities.create({
-        data: {
-          userID: split.userID,
-          action: 'expense_split',
-          description: `You owe ${split.amount} for an expense in group ID ${groupID}.`,
-        },
-      });
     }
 
-    // Log activity for the user who paid the expense
+    // Log activity for the payer
     await prisma.activities.create({
       data: {
         userID: paidBy,
@@ -87,13 +98,31 @@ exports.addExpense = async (req, res) => {
   }
 };
 
+
 exports.getExpensesByGroup = async (req, res) => {
   const { groupID } = req.params;
 
   try {
     const expenses = await prisma.expenses.findMany({
       where: { groupID: Number(groupID) },
-      include: {splits: true },
+      include: {
+        splits: {
+          include: {
+            user: {
+              select: {
+                userID: true,
+                name: true,
+              },
+            },
+          },
+        },
+        user: { //user who paid
+          select: {
+            userID: true,
+            name: true,
+          },
+        },
+      },
     });
 
     res.status(200).json(expenses);
@@ -102,6 +131,7 @@ exports.getExpensesByGroup = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch group expenses' });
   }
 };
+
 
 // Get expenses by user
 exports.getUserExpenses = async (req, res) => {
@@ -170,6 +200,33 @@ exports.getBalances = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch balances' });
   }
 };
+
+// Get balance between logged-in user and a specific friend
+exports.getBalanceWithFriend = async (req, res) => {
+  const { userID } = req;
+  const { friendID } = req.params; 
+
+  try {
+    const balances = await prisma.balances.findMany({
+      where: {
+        OR: [
+          { userID: Number(userID), friendID: Number(friendID) },
+          { userID: Number(friendID), friendID: Number(userID) },
+        ],
+      },
+      include: {
+        user: { select: { userID: true, name: true } },   
+        friend: { select: { userID: true, name: true } }, 
+      },
+    });
+
+    res.status(200).json(balances);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch balance with the friend' });
+  }
+};
+
 
 //settle expenses
 exports.settleExpense = async (req, res) => {
