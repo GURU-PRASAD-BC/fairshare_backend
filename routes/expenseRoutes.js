@@ -27,7 +27,6 @@ router.put('/:expenseID', authenticateUser, updateExpense);
 // Get balances for a user
 router.get('/balances', authenticateUser, getBalances);
 // Get balances for a user with friend
-// Add this to your route file
 router.get('/balances/:friendID', authenticateUser,getBalanceWithFriend);
 // Get Summary of balances
 router.get('/balances-summary', authenticateUser,getBalancesSummary);

@@ -202,9 +202,10 @@ exports.getBalances = async (req, res) => {
 };
 
 // Get balance between logged-in user and a specific friend
+// Get balance between logged-in user and a specific friend
 exports.getBalanceWithFriend = async (req, res) => {
   const { userID } = req;
-  const { friendID } = req.params; 
+  const { friendID } = req.params;
 
   try {
     const balances = await prisma.balances.findMany({
@@ -215,12 +216,37 @@ exports.getBalanceWithFriend = async (req, res) => {
         ],
       },
       include: {
-        user: { select: { userID: true, name: true } },   
-        friend: { select: { userID: true, name: true } }, 
+        user: { select: { userID: true, name: true } },
+        friend: { select: { userID: true, name: true } },
       },
     });
 
-    res.status(200).json(balances);
+    if (balances.length === 0) {
+      return res.status(200).json({ message: 'No transactions exist between you and the specified friend.' });
+    }
+
+    const response = {
+      iOwe: [],
+      theyOweMe: [],
+    };
+
+    for (const balance of balances) {
+      if (balance.userID === Number(userID)) {
+        // Friend owes the logged-in user
+        response.theyOweMe.push({
+          friend: balance.friend,
+          amountOwed: balance.amountOwed,
+        });
+      } else {
+        // Logged-in user owes the friend
+        response.iOwe.push({
+          friend: balance.user,
+          amountOwed: balance.amountOwed,
+        });
+      }
+    }
+
+    res.status(200).json(response);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Failed to fetch balance with the friend' });
@@ -326,6 +352,16 @@ exports.settleExpense = async (req, res) => {
       await prisma.balances.updateMany({
         where: { userID, groupID },
         data: { amountOwed: totalOwed - amount },
+      });
+
+       // Log the settlement
+       await prisma.settlements.create({
+        data: {
+          userID,
+          groupID,
+          amount,
+          description: `Settled ${amount} in group ID ${groupID}.`,
+        },
       });
 
       // Log settlement activity

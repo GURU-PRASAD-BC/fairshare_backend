@@ -5,7 +5,7 @@ const { sendFriendInvitationMail } = require("../utils/mailer");
 const addFriend = async (req, res) => {
     const { friendEmail } = req.body; 
     const userID = req.user.userID; 
-  console.log("called",friendEmail);
+
     if (!friendEmail) {
       return res.status(400).json({ message: "Friend's email is required" });
     }

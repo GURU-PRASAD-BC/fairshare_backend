@@ -39,7 +39,9 @@ model User {
   activities   Activities[]
   balances     Balances[]      @relation("UserBalances")
   owedBalances Balances[]      @relation("FriendBalances")
-   feedbacks    Feedback[] 
+  feedbacks    Feedback[] 
+  settlements  Settlements[]  @relation("userSettlements")
+  friendSettlements Settlements[] @relation("FriendSettlements")
 }
 
 model Friends {
@@ -59,6 +61,7 @@ model Group {
   creator     User          @relation("CreatorGroups", fields: [createdBy], references: [userID])      
   members     GroupMember[]
   expenses    Expenses[]
+  settlements  Settlements[]
 }
 
 model GroupMember {
@@ -101,6 +104,20 @@ model Balances {
   user       User     @relation("UserBalances", fields: [userID], references: [userID])
   friend     User     @relation("FriendBalances", fields: [friendID], references: [userID])
 }
+
+model Settlements {
+  id           Int      @id @default(autoincrement())
+  userID       Int      
+  friendID     Int?    
+  groupID      Int?    
+  amount       Decimal  @db.Decimal(20, 2) 
+  timestamp    DateTime @default(now())    
+  description  String?                    
+  user         User     @relation("userSettlements",fields: [userID], references: [userID])
+  friend       User?    @relation("FriendSettlements",fields: [friendID], references: [userID])
+  group        Group?   @relation(fields: [groupID], references: [groupID])
+}
+
 
 model Activities {
   activityID  Int      @id @default(autoincrement())
