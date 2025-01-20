@@ -4,6 +4,11 @@ const prisma = require('../config/prismaClient');
 exports.addExpense = async (req, res) => {
   const { amount, description, paidBy, groupID, type, category, splits, image } = req.body;
 
+  const group = await prisma.group.findUnique({
+    where: { groupID },
+    select: { groupName: true }, 
+  });
+
   try {
     const expense = await prisma.expenses.create({
       data: {
@@ -87,7 +92,7 @@ exports.addExpense = async (req, res) => {
       data: {
         userID: paidBy,
         action: 'expense_paid',
-        description: `You paid ${amount} for an expense in group ID ${groupID}.`,
+        description: `You paid ${amount} for an expense in group ID ${group.groupName}.`,
       },
     });
 
