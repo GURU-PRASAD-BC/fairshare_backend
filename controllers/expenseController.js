@@ -173,14 +173,15 @@ exports.deleteExpense = async (req, res) => {
 // Update an expense
 exports.updateExpense = async (req, res) => {
   const { expenseID } = req.params;
-  const { amount, description, categoryID } = req.body;
+  const {description, category } = req.body;
 
   try {
     const updatedExpense = await prisma.expenses.update({
       where: { expenseID: Number(expenseID) },
-      data: { amount, description, categoryID },
+      data: {description, category },
     });
 
+    console.log(updatedExpense);
     res.status(200).json(updatedExpense);
   } catch (error) {
     console.error(error);

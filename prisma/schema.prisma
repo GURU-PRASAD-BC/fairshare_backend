@@ -92,7 +92,7 @@ model ExpenseSplit {
   expenseID Int
   userID    Int
   amount    Decimal  @db.Decimal(20, 2)
-  expense   Expenses @relation(fields: [expenseID], references: [expenseID])
+  expense   Expenses @relation(fields: [expenseID], references: [expenseID],onDelete: Cascade)
   user      User     @relation(fields: [userID], references: [userID])
 }
 

@@ -57,6 +57,10 @@ exports.logIn = async (req, res) => {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) return res.status(404).json({ message: "Invalid email or password" });
 
+    if(user.password=="google-oauth-user"||user.password=="nopassword"){
+      return res.status(401).json({ message: "Please change/update your password" });
+    }
+
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
     if (!isPasswordCorrect) return res.status(404).json({ message: "Invalid email or password" });
 
@@ -226,12 +230,12 @@ exports.deleteUser = async (req, res) => {
 
     const userId = decoded.id;
 
-    // Delete all related entities
-    await prisma.$transaction([
+     // Delete all related entities in the correct order
+     await prisma.$transaction([
       prisma.friends.deleteMany({ where: { OR: [{ userID: userId }, { friendID: userId }] } }),
       prisma.groupMember.deleteMany({ where: { userID: userId } }),
-      prisma.expenses.deleteMany({ where: { paidBy: userId } }),
       prisma.expenseSplit.deleteMany({ where: { userID: userId } }),
+      prisma.expenses.deleteMany({ where: { paidBy: userId } }),
       prisma.balances.deleteMany({ where: { OR: [{ userID: userId }, { friendID: userId }] } }),
       prisma.activities.deleteMany({ where: { userID: userId } }),
       prisma.group.deleteMany({ where: { createdBy: userId } }),
