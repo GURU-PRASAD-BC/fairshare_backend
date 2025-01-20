@@ -300,26 +300,44 @@ exports.getBalancesSummary = async (req, res) => {
           { friendID: Number(userID) },
         ],
       },
+      include: {
+        user: true,  // User details (payer/receiver)
+        friend: true, // Friend details (receiver/payer)
+      },
     });
 
     let totalOwes = 0;
     let totalOwedTo = 0;
     const summary = {};
 
+    // Calculate totalOwes, totalOwedTo, and friend balances
     balances.forEach(balance => {
+      const amountOwed = Number(balance.amountOwed); // Ensure numeric value
+
       if (balance.userID === Number(userID)) {
-        totalOwes += balance.amountOwed;
-        summary[balance.friendID] = (summary[balance.friendID] || 0) - balance.amountOwed;
+        totalOwes += amountOwed;
+        summary[balance.friendID] = (summary[balance.friendID] || 0) - amountOwed;
       } else {
-        totalOwedTo += balance.amountOwed;
-        summary[balance.userID] = (summary[balance.userID] || 0) + balance.amountOwed;
+        totalOwedTo += amountOwed;
+        summary[balance.userID] = (summary[balance.userID] || 0) + amountOwed;
       }
     });
 
-    const friendBalances = Object.keys(summary).map(friendID => ({
-      friendID,
-      balance: summary[friendID],
-    }));
+    // Fetch friend details for each summary entry (friendID)
+    const friendBalances = await Promise.all(
+      Object.keys(summary).map(async (friendID) => {
+        const friend = await prisma.user.findUnique({
+          where: { userID: Number(friendID) },
+          select: { userID: true, name: true}, 
+        });
+
+        return {
+          friendID: Number(friendID),
+          balance: summary[friendID],
+          friendName: friend ? friend.name : 'Unknown',
+        };
+      })
+    );
 
     res.status(200).json({
       totalOwes,
@@ -331,7 +349,6 @@ exports.getBalancesSummary = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch balances summary' });
   }
 };
-
 
 // Add a new category
 exports.addCategory = async (req, res) => {
