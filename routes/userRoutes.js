@@ -19,7 +19,7 @@ router.get("/google/callback",passport.authenticate("google", { failureRedirect:
 
      // Redirect to the frontend with the token
      const frontendURL = process.env.FRONTEND_URL || "http://192.168.0.126:3000";
-     res.redirect(`${frontendURL}/dashboard/?token=${token}`);
+     res.redirect(`${frontendURL}/redirectPage/?token=${token}`);
   }
 );
 

@@ -8,7 +8,7 @@ exports.getUserActivities = async (req, res) => {
     const activities = await prisma.activities.findMany({
       where: { userID },
       orderBy: { timestamp: "desc" },
-      take: 20, // Limit to the last 20 activities
+      take: 30, // Limit to the last 20 activities
     });
 
     res.status(200).json({ activities });

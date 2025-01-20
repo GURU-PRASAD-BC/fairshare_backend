@@ -19,7 +19,7 @@ router.post('/add', authenticateUser, addExpense);
 // Get all expenses for a specific group
 router.get('/group/:groupID', authenticateUser, getExpensesByGroup);
 // Get all expenses for a specific user
-router.get('/user/:userID', authenticateUser, getUserExpenses);
+router.get('/user', authenticateUser, getUserExpenses);
 // Delete an expense
 router.delete('/:expenseID', authenticateUser, deleteExpense);
 // Update an expense

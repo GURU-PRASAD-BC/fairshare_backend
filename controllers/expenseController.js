@@ -140,7 +140,7 @@ exports.getExpensesByGroup = async (req, res) => {
 
 // Get expenses by user
 exports.getUserExpenses = async (req, res) => {
-  const { userID } = req.params;
+  const userID = req.user.userID;
 
   try {
     const expenses = await prisma.expenses.findMany({
