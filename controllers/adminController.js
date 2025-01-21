@@ -140,7 +140,7 @@ exports.getAnalytics = async (req, res) => {
   try {
     const usersCount = await prisma.user.count();
     const groupsCount = await prisma.group.count();
-    const expensesCount = await prisma.expense.count();
+    const expensesCount = await prisma.expenses.count();
 
     res.status(200).json({
       users: usersCount,
