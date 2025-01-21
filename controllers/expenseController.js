@@ -355,64 +355,66 @@ exports.settleExpense = async (req, res) => {
     }
 
     if (groupID) {
-      // Settle within a group
+      // Handle group settlement
       const group = await prisma.group.findUnique({
-        where: { groupID: groupID },
+        where: { groupID },
         select: { groupName: true },
       });
 
-      if (groupID) {
-        const groupExpenses = await prisma.expenses.findMany({
-          where: { groupID },
-          include: { splits: true },
-        });
-      
-        if (!groupExpenses || groupExpenses.length === 0) {
-          return res.status(400).json({ message: "No expenses found for this group." });
-        }
-      
-        let totalOwed = 0;
-        groupExpenses.forEach((expense) => {
-          expense.splits.forEach((split) => {
-            if (split.userID === userID) {
-              totalOwed += Number(split.amount);
-            }
-          });
-        });
-      
-        if (settlementAmount > totalOwed) {
-          return res.status(400).json({ message: "Settlement amount exceeds total outstanding balance in the group." });
-        }
-      
-        // Remove the user's splits for the group
-        await prisma.expenseSplit.deleteMany({
-          where: {
-            userID,
-            expense: { groupID },
-          },
-        });
-      
-        // Log the settlement
-        await prisma.settlements.create({
-          data: {
-            userID,
-            groupID,
-            amount: settlementAmount,
-            description: `Settled ${settlementAmount} in group ID ${groupID}.`,
-          },
-        });
+      if (!group) {
+        return res.status(404).json({ message: "Group not found." });
+      }
 
-         // Log settlement activity
-        await prisma.activities.create({
+      const groupBalances = await prisma.balances.findMany({
+        where: { groupID, userID },
+      });
+
+      const totalOwed = groupBalances.reduce((sum, balance) => sum + Number(balance.amountOwed), 0);
+
+      if (settlementAmount > totalOwed) {
+        return res.status(400).json({ message: "Settlement amount exceeds outstanding group balance." });
+      }
+
+      let remainingAmount = settlementAmount;
+
+      for (const balance of groupBalances) {
+        if (remainingAmount <= 0) break;
+
+        const currentBalance = Number(balance.amountOwed);
+        const newBalance = currentBalance - remainingAmount;
+
+        if (newBalance <= 0) {
+          remainingAmount = Math.abs(newBalance);
+          await prisma.balances.delete({ where: { id: balance.id } });
+        } else {
+          await prisma.balances.update({
+            where: { id: balance.id },
+            data: { amountOwed: newBalance },
+          });
+          remainingAmount = 0;
+        }
+      }
+
+      // Log settlement activity
+      await prisma.activities.create({
         data: {
           userID,
-          action: 'settle_group_expense',
-          description: `You settled ${settlementAmount} in group ID ${group.name}.`,
+          action: "settle_group_expense",
+          description: `You settled ${settlementAmount} in group ${group.groupName}.`,
         },
       });
-      
-        return res.status(200).json({ message: "Group balance settled successfully." });
-      }      
+
+      // Log the settlement
+      await prisma.settlements.create({
+        data: {
+          userID,
+          groupID,
+          amount: settlementAmount,
+          description: `Settled ${settlementAmount} in group ${group.groupName}.`,
+        },
+      });
+
+      return res.status(200).json({ message: "Group balance settled successfully." });
     }
   } catch (error) {
     console.error("Error settling expense:", error);
