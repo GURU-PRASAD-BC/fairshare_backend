@@ -211,56 +211,114 @@ exports.getBalances = async (req, res) => {
   }
 };
 
-// Get balance between logged-in user and a specific friend
 exports.getBalanceWithFriend = async (req, res) => {
   const { userID } = req;
   const { friendID } = req.params;
 
   try {
-    const balances = await prisma.balances.findMany({
+    // Find all expense splits involving both the logged-in user and the friend
+    const expensesWithFriend = await prisma.expenses.findMany({
       where: {
         OR: [
-          { userID: Number(userID), friendID: Number(friendID) },
-          { userID: Number(friendID), friendID: Number(userID) },
+          { paidBy: Number(userID), splits: { some: { userID: Number(friendID) } } },
+          { paidBy: Number(friendID), splits: { some: { userID: Number(userID) } } },
         ],
       },
-      include: {
-        user: { select: { userID: true, name: true } },
-        friend: { select: { userID: true, name: true } },
-      },
+      include: { splits: true },
     });
 
-    if (balances.length === 0) {
+    if (expensesWithFriend.length === 0) {
       return res.status(200).json({ message: 'No transactions exist between you and the specified friend.' });
     }
 
-    const response = {
-      iOwe: [],
-      theyOweMe: [],
-    };
+    let iOwe = 0;
+    let theyOweMe = 0;
 
-    for (const balance of balances) {
-      if (balance.userID === Number(userID)) {
-        // Friend owes the logged-in user
-        response.theyOweMe.push({
-          friend: balance.friend,
-          amountOwed: balance.amountOwed,
-        });
-      } else {
-        // Logged-in user owes the friend
-        response.iOwe.push({
-          friend: balance.user,
-          amountOwed: balance.amountOwed,
-        });
-      }
-    }
+    // Calculate balances
+    expensesWithFriend.forEach((expense) => {
+      expense.splits.forEach((split) => {
+        if (split.userID === Number(userID) && expense.paidBy === Number(friendID)) {
+          iOwe += Number(split.amount);
+        } else if (split.userID === Number(friendID) && expense.paidBy === Number(userID)) {
+          theyOweMe += Number(split.amount);
+        }
+      });
+    });
 
-    res.status(200).json(response);
+    res.status(200).json({
+      iOwe,
+      theyOweMe,
+      balance: theyOweMe - iOwe, // Positive if the friend owes you, negative if you owe the friend
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Failed to fetch balance with the friend' });
   }
 };
+
+exports.getBalancesSummary = async (req, res) => {
+  const { userID } = req;
+
+  try {
+    // Fetch all expenses involving the user
+    const userExpenses = await prisma.expenses.findMany({
+      where: {
+        OR: [
+          { paidBy: Number(userID) }, // User is the payer
+          { splits: { some: { userID: Number(userID) } } }, // User is in splits
+        ],
+      },
+      include: { splits: true },
+    });
+
+    let totalOwes = 0;
+    let totalOwedTo = 0;
+    const summary = {};
+
+    // Calculate balances
+    userExpenses.forEach((expense) => {
+      expense.splits.forEach((split) => {
+        if (split.userID === Number(userID)) {
+          // User owes the payer
+          if (!summary[expense.paidBy]) summary[expense.paidBy] = 0;
+          summary[expense.paidBy] += Number(split.amount);
+          totalOwes += Number(split.amount);
+        } else if (expense.paidBy === Number(userID)) {
+          // Others owe the user
+          if (!summary[split.userID]) summary[split.userID] = 0;
+          summary[split.userID] -= Number(split.amount);
+          totalOwedTo += Number(split.amount);
+        }
+      });
+    });
+
+    // Fetch friend details for each summary entry
+    const friendBalances = await Promise.all(
+      Object.keys(summary).map(async (friendID) => {
+        const friend = await prisma.user.findUnique({
+          where: { userID: Number(friendID) },
+          select: { userID: true, name: true },
+        });
+
+        return {
+          friendID: Number(friendID),
+          balance: summary[friendID],
+          friendName: friend ? friend.name : 'Unknown',
+        };
+      })
+    );
+
+    res.status(200).json({
+      totalOwes,
+      totalOwedTo,
+      friendBalances,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch balances summary' });
+  }
+};
+
 
 exports.settleExpense = async (req, res) => {
   const userID = req.user.userID;
@@ -355,133 +413,68 @@ exports.settleExpense = async (req, res) => {
     }
 
     if (groupID) {
-      // Handle group settlement
+      // Settle within a group
       const group = await prisma.group.findUnique({
-        where: { groupID },
+        where: { groupID: groupID },
         select: { groupName: true },
       });
 
-      if (!group) {
-        return res.status(404).json({ message: "Group not found." });
-      }
-
-      const groupBalances = await prisma.balances.findMany({
-        where: { groupID, userID },
-      });
-
-      const totalOwed = groupBalances.reduce((sum, balance) => sum + Number(balance.amountOwed), 0);
-
-      if (settlementAmount > totalOwed) {
-        return res.status(400).json({ message: "Settlement amount exceeds outstanding group balance." });
-      }
-
-      let remainingAmount = settlementAmount;
-
-      for (const balance of groupBalances) {
-        if (remainingAmount <= 0) break;
-
-        const currentBalance = Number(balance.amountOwed);
-        const newBalance = currentBalance - remainingAmount;
-
-        if (newBalance <= 0) {
-          remainingAmount = Math.abs(newBalance);
-          await prisma.balances.delete({ where: { id: balance.id } });
-        } else {
-          await prisma.balances.update({
-            where: { id: balance.id },
-            data: { amountOwed: newBalance },
-          });
-          remainingAmount = 0;
+      if (groupID) {
+        const groupExpenses = await prisma.expenses.findMany({
+          where: { groupID },
+          include: { splits: true },
+        });
+      
+        if (!groupExpenses || groupExpenses.length === 0) {
+          return res.status(400).json({ message: "No expenses found for this group." });
         }
-      }
+      
+        let totalOwed = 0;
+        groupExpenses.forEach((expense) => {
+          expense.splits.forEach((split) => {
+            if (split.userID === userID) {
+              totalOwed += Number(split.amount);
+            }
+          });
+        });
+      
+        if (settlementAmount > totalOwed) {
+          return res.status(400).json({ message: "Settlement amount exceeds total outstanding balance in the group." });
+        }
+      
+        // Remove the user's splits for the group
+        await prisma.expenseSplit.deleteMany({
+          where: {
+            userID,
+            expense: { groupID },
+          },
+        });
+      
+        // Log the settlement
+        await prisma.settlements.create({
+          data: {
+            userID,
+            groupID,
+            amount: settlementAmount,
+            description: `Settled ${settlementAmount} in group ID ${groupID}.`,
+          },
+        });
 
-      // Log settlement activity
-      await prisma.activities.create({
+         // Log settlement activity
+        await prisma.activities.create({
         data: {
           userID,
-          action: "settle_group_expense",
-          description: `You settled ${settlementAmount} in group ${group.groupName}.`,
+          action: 'settle_group_expense',
+          description: `You settled ${settlementAmount} in group ID ${group.name}.`,
         },
       });
-
-      // Log the settlement
-      await prisma.settlements.create({
-        data: {
-          userID,
-          groupID,
-          amount: settlementAmount,
-          description: `Settled ${settlementAmount} in group ${group.groupName}.`,
-        },
-      });
-
-      return res.status(200).json({ message: "Group balance settled successfully." });
+      
+        return res.status(200).json({ message: "Group balance settled successfully." });
+      }      
     }
   } catch (error) {
     console.error("Error settling expense:", error);
     res.status(500).json({ message: "Failed to settle expense." });
-  }
-};
-
-
-// Get owes, owed-to summary
-exports.getBalancesSummary = async (req, res) => {
-  const { userID } = req;
-
-  try {
-    const balances = await prisma.balances.findMany({
-      where: {
-        OR: [
-          { userID: Number(userID) },
-          { friendID: Number(userID) },
-        ],
-      },
-      include: {
-        user: true,  // User details (payer/receiver)
-        friend: true, // Friend details (receiver/payer)
-      },
-    });
-
-    let totalOwes = 0;
-    let totalOwedTo = 0;
-    const summary = {};
-
-    // Calculate totalOwes, totalOwedTo, and friend balances
-    balances.forEach(balance => {
-      const amountOwed = Number(balance.amountOwed); // Ensure numeric value
-
-      if (balance.userID === Number(userID)) {
-        totalOwes += amountOwed;
-        summary[balance.friendID] = (summary[balance.friendID] || 0) - amountOwed;
-      } else {
-        totalOwedTo += amountOwed;
-        summary[balance.userID] = (summary[balance.userID] || 0) + amountOwed;
-      }
-    });
-
-    // Fetch friend details for each summary entry (friendID)
-    const friendBalances = await Promise.all(
-      Object.keys(summary).map(async (friendID) => {
-        const friend = await prisma.user.findUnique({
-          where: { userID: Number(friendID) },
-          select: { userID: true, name: true}, 
-        });
-
-        return {
-          friendID: Number(friendID),
-          balance: summary[friendID],
-          friendName: friend ? friend.name : 'Unknown',
-        };
-      })
-    );
-
-    res.status(200).json({
-      totalOwes,
-      totalOwedTo,
-      friendBalances,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Failed to fetch balances summary' });
   }
 };
 
