@@ -104,6 +104,7 @@ exports.promoteUser = async (req, res) => {
       where: { id: userId },
       data: { role: 'ADMIN' },
     });
+    console.log(user);
     res.status(200).json({ message: `User ${user.name} promoted to admin` });
   } catch (error) {
     res.status(500).json({ error: "Failed to promote user" });
