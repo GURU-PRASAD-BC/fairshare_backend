@@ -62,6 +62,7 @@ model Group {
   members     GroupMember[]
   expenses    Expenses[]
   settlements  Settlements[]
+  balances     Balances[]  @relation("GroupBalances")
 }
 
 model GroupMember {
@@ -99,10 +100,12 @@ model ExpenseSplit {
 model Balances {
   id         Int      @id @default(autoincrement())
   userID     Int
-  friendID   Int
+  friendID   Int?
+  groupID    Int?
   amountOwed Decimal  @db.Decimal(20, 2)
   user       User     @relation("UserBalances", fields: [userID], references: [userID])
-  friend     User     @relation("FriendBalances", fields: [friendID], references: [userID])
+  friend     User?     @relation("FriendBalances", fields: [friendID], references: [userID])
+  group      Group?   @relation("GroupBalances",fields: [groupID], references: [groupID])
 }
 
 model Settlements {
