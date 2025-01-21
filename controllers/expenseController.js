@@ -324,6 +324,8 @@ exports.settleExpense = async (req, res) => {
   const userID = req.user.userID;
   const { friendID, groupID, amount } = req.body;
 
+  //console.log()
+  
   try {
     // Validate inputs
     if (!friendID && !groupID) {
