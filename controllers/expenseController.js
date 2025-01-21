@@ -212,7 +212,6 @@ exports.getBalances = async (req, res) => {
 };
 
 // Get balance between logged-in user and a specific friend
-// Get balance between logged-in user and a specific friend
 exports.getBalanceWithFriend = async (req, res) => {
   const { userID } = req;
   const { friendID } = req.params;
@@ -230,6 +229,8 @@ exports.getBalanceWithFriend = async (req, res) => {
         friend: { select: { userID: true, name: true } },
       },
     });
+
+    console.log(balances)
 
     if (balances.length === 0) {
       return res.status(200).json({ message: 'No transactions exist between you and the specified friend.' });
@@ -263,10 +264,8 @@ exports.getBalanceWithFriend = async (req, res) => {
   }
 };
 
-
-//settle expenses
 exports.settleExpense = async (req, res) => {
-  const  userID = req.user.userID; 
+  const userID = req.user.userID;
   const { friendID, groupID, amount } = req.body;
 
   try {
@@ -278,8 +277,8 @@ exports.settleExpense = async (req, res) => {
       return res.status(400).json({ message: "Invalid settlement amount." });
     }
 
-    // Settle between two users
     if (friendID) {
+      // Settle between two users
       const balance = await prisma.balances.findFirst({
         where: {
           OR: [
@@ -293,7 +292,15 @@ exports.settleExpense = async (req, res) => {
         return res.status(400).json({ message: "No outstanding balance to settle with this friend." });
       }
 
-      // Update the balance
+       // Fetch friend's name
+       const friend = await prisma.users.findUnique({
+        where: { id: friendID },
+        select: { name: true },
+      });
+      if (!friend) {
+        return res.status(404).json({ message: "Friend not found." });
+      }
+
       const newBalance =
         balance.userID === userID
           ? balance.amountOwed - amount
@@ -303,17 +310,35 @@ exports.settleExpense = async (req, res) => {
         return res.status(400).json({ message: "Settlement amount exceeds outstanding balance." });
       }
 
-      await prisma.balances.update({
-        where: { id: balance.id },
-        data: { amountOwed: newBalance },
+      // Update or remove the balance
+      if (newBalance === 0) {
+        await prisma.balances.delete({ where: { id: balance.id } });
+      } else {
+        await prisma.balances.update({
+          where: { id: balance.id },
+          data: { amountOwed: newBalance },
+        });
+      }
+
+      // Remove splits involving the user
+      await prisma.expenseSplit.deleteMany({
+        where: {
+          userID,
+          expense: {
+            OR: [
+              { paidBy: friendID },
+              { splits: { some: { userID: friendID } } },
+            ],
+          },
+        },
       });
 
-      // Log settlement activity for both users
+      // Log settlement activity
       await prisma.activities.create({
         data: {
           userID,
           action: 'settle_expense',
-          description: `You settled ${amount} with friend ID ${friendID}.`,
+          description: `You settled ${amount} with friend ID ${friend.name}.`,
         },
       });
 
@@ -321,15 +346,24 @@ exports.settleExpense = async (req, res) => {
         data: {
           userID: friendID,
           action: 'settle_expense',
-          description: `Your friend (ID ${userID}) settled ${amount} with you.`,
+          description: `Your friend settled ${amount} with you.`,
         },
       });
 
       return res.status(200).json({ message: "Balance settled successfully.", balance: newBalance });
     }
 
-    // Settle within a group
     if (groupID) {
+      // Settle within a group
+      const group = await prisma.groups.findUnique({
+        where: { id: groupID },
+        select: { name: true },
+      });
+
+      if (!group) {
+        return res.status(404).json({ message: "Group not found." });
+      }
+
       const groupExpenses = await prisma.expenses.findMany({
         where: { groupID },
         include: { splits: true },
@@ -358,19 +392,27 @@ exports.settleExpense = async (req, res) => {
         return res.status(400).json({ message: "Settlement amount exceeds total outstanding balance in the group." });
       }
 
-      // Settle the balance
+      // Update balances
       await prisma.balances.updateMany({
         where: { userID, groupID },
         data: { amountOwed: totalOwed - amount },
       });
 
-       // Log the settlement
-       await prisma.settlements.create({
+      // Remove the user's splits for the group
+      await prisma.expenseSplit.deleteMany({
+        where: {
+          userID,
+          expense: { groupID },
+        },
+      });
+
+      // Log the settlement
+      await prisma.settlements.create({
         data: {
           userID,
           groupID,
           amount,
-          description: `Settled ${amount} in group ID ${groupID}.`,
+          description: `Settled ${amount} in group ID ${group.name}.`,
         },
       });
 
@@ -379,7 +421,7 @@ exports.settleExpense = async (req, res) => {
         data: {
           userID,
           action: 'settle_group_expense',
-          description: `You settled ${amount} in group ID ${groupID}.`,
+          description: `You settled ${amount} in group ID ${group.name}.`,
         },
       });
 
@@ -464,6 +506,9 @@ exports.settleAllOwes = async (req, res) => {
         userID: Number(userID),
         amountOwed: { gt: 0 },
       },
+      include: {
+        expense: true, // Include related expenses for splits
+      },
     });
 
     if (balances.length === 0) {
@@ -471,12 +516,21 @@ exports.settleAllOwes = async (req, res) => {
     }
 
     // Update all balances to settle owes
-    const settlePromises = balances.map((balance) =>
-      prisma.balances.update({
-        where: { id: balance.id }, 
-        data: { amountOwed: 0 }, // Set the amount owed to zero
-      })
-    );
+    const settlePromises = balances.map(async (balance) => {
+      // Remove splits for the settled balances
+      await prisma.expenseSplit.deleteMany({
+        where: {
+          userID: Number(userID),
+          expenseID: balance.expense.id,
+        },
+      });
+
+      // Update balance to zero
+      return prisma.balances.update({
+        where: { id: balance.id },
+        data: { amountOwed: 0 },
+      });
+    });
 
     await Promise.all(settlePromises);
 
@@ -484,17 +538,14 @@ exports.settleAllOwes = async (req, res) => {
     await prisma.activities.create({
       data: {
         userID: userID,
-        action: 'all expense_paid',
-        description: `You paid All outstanding debts`,
+        action: 'settle_all_expenses',
+        description: `You settled all outstanding debts.`,
       },
     });
 
-    res.status(200).json({ message: 'All outstanding debts have been settled.' });
+    res.status(200).json({ message: 'All outstanding debts have been settled, and splits have been removed.' });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Failed to settle debts.' });
+    console.error("Error settling all owes:", error);
+    res.status(500).json({ message: 'Failed to settle all debts.' });
   }
 };
-
-
-
