@@ -57,6 +57,10 @@ exports.logIn = async (req, res) => {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) return res.status(404).json({ message: "Invalid email or password" });
 
+    if (user.isBlocked) {
+      return res.status(403).json({ message: "User is temporarily blocked" });
+    }
+
     if(user.password=="google-oauth-user"||user.password=="nopassword"){
       return res.status(401).json({ message: "Please change/update your password" });
     }
