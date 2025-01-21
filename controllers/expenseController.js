@@ -401,6 +401,15 @@ exports.settleExpense = async (req, res) => {
             description: `Settled ${settlementAmount} in group ID ${groupID}.`,
           },
         });
+
+         // Log settlement activity
+        await prisma.activities.create({
+        data: {
+          userID,
+          action: 'settle_group_expense',
+          description: `You settled ${settlementAmount} in group ID ${group.name}.`,
+        },
+      });
       
         return res.status(200).json({ message: "Group balance settled successfully." });
       }      
