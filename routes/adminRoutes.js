@@ -16,7 +16,7 @@ const router = express.Router();
 router.get('/users', isAdmin, getAllUsers);
 router.post('/users/block/:userId', isAdmin, blockUser);
 router.delete('/users/:userId', isAdmin, deleteUser);
-router.post('/users/promote/:userId', isAdmin, promoteUser);
+router.put('/users/promote/:userId', isAdmin, promoteUser);
 
 // Feedback Management
 router.get('/feedback', isAdmin, getAllFeedback);

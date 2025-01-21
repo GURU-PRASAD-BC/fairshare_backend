@@ -99,9 +99,10 @@ exports.deleteUser = async (req, res) => {
 
 exports.promoteUser = async (req, res) => {
   const { userId } = req.params;
+
   try {
     const user = await prisma.user.update({
-      where: { id: userId },
+      where: { userID: Number(userId) },
       data: { role: 'ADMIN' },
     });
     console.log(user);

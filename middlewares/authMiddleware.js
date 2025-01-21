@@ -12,7 +12,7 @@ exports.isAdmin = (req, res, next) => {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded; // Attach user data to request object
-    console.log(req.user)
+    
     // Check if user is an admin
     if (req.user.role === 'ADMIN') {
       next();
