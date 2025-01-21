@@ -474,7 +474,7 @@ exports.settleExpense = async (req, res) => {
             userID,
             groupID,
             amount: settlementAmount,
-            description: `Settled ${settlementAmount} in group ID ${groupID}.`,
+            description: `Settled ${settlementAmount} in group ID ${group.groupID}.`,
           },
         });
     
