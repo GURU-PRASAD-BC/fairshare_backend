@@ -273,9 +273,11 @@ exports.settleExpense = async (req, res) => {
     if (!friendID && !groupID) {
       return res.status(400).json({ message: "Either 'friendID' or 'groupID' must be provided." });
     }
-    if (!amount || amount <= 0) {
+    if (!amount || Number(amount) <= 0) {
       return res.status(400).json({ message: "Invalid settlement amount." });
     }
+
+    const settlementAmount = Number(amount); // Ensure amount is a number
 
     if (friendID) {
       // Settle between two users
@@ -288,23 +290,24 @@ exports.settleExpense = async (req, res) => {
         },
       });
 
-      if (!balance || balance.amountOwed === 0) {
+      if (!balance || Number(balance.amountOwed) === 0) {
         return res.status(400).json({ message: "No outstanding balance to settle with this friend." });
       }
 
-       // Fetch friend's name
-       const friend = await prisma.users.findUnique({
-        where: { id: friendID },
+      // Fetch friend's name
+      const friend = await prisma.user.findUnique({
+        where: { userID: friendID },
         select: { name: true },
       });
       if (!friend) {
         return res.status(404).json({ message: "Friend not found." });
       }
 
+      const currentBalance = Number(balance.amountOwed);
       const newBalance =
         balance.userID === userID
-          ? balance.amountOwed - amount
-          : balance.amountOwed + amount;
+          ? currentBalance - settlementAmount
+          : currentBalance + settlementAmount;
 
       if (newBalance < 0) {
         return res.status(400).json({ message: "Settlement amount exceeds outstanding balance." });
@@ -338,7 +341,7 @@ exports.settleExpense = async (req, res) => {
         data: {
           userID,
           action: 'settle_expense',
-          description: `You settled ${amount} with friend ID ${friend.name}.`,
+          description: `You settled ${settlementAmount} with friend ID ${friend.name}.`,
         },
       });
 
@@ -346,7 +349,7 @@ exports.settleExpense = async (req, res) => {
         data: {
           userID: friendID,
           action: 'settle_expense',
-          description: `Your friend settled ${amount} with you.`,
+          description: `Your friend settled ${settlementAmount} with you.`,
         },
       });
 
@@ -379,7 +382,7 @@ exports.settleExpense = async (req, res) => {
       groupExpenses.forEach((expense) => {
         expense.splits.forEach((split) => {
           if (split.userID === userID) {
-            totalOwed += split.amount;
+            totalOwed += Number(split.amount);
           }
         });
       });
@@ -388,14 +391,14 @@ exports.settleExpense = async (req, res) => {
         return res.status(400).json({ message: "No outstanding balance to settle in this group." });
       }
 
-      if (amount > totalOwed) {
+      if (settlementAmount > totalOwed) {
         return res.status(400).json({ message: "Settlement amount exceeds total outstanding balance in the group." });
       }
 
       // Update balances
       await prisma.balances.updateMany({
         where: { userID, groupID },
-        data: { amountOwed: totalOwed - amount },
+        data: { amountOwed: totalOwed - settlementAmount },
       });
 
       // Remove the user's splits for the group
@@ -411,8 +414,8 @@ exports.settleExpense = async (req, res) => {
         data: {
           userID,
           groupID,
-          amount,
-          description: `Settled ${amount} in group ID ${group.name}.`,
+          amount: settlementAmount,
+          description: `Settled ${settlementAmount} in group ID ${group.name}.`,
         },
       });
 
@@ -421,7 +424,7 @@ exports.settleExpense = async (req, res) => {
         data: {
           userID,
           action: 'settle_group_expense',
-          description: `You settled ${amount} in group ID ${group.name}.`,
+          description: `You settled ${settlementAmount} in group ID ${group.name}.`,
         },
       });
 
@@ -432,6 +435,7 @@ exports.settleExpense = async (req, res) => {
     res.status(500).json({ message: "Failed to settle expense." });
   }
 };
+
 
 // Get owes, owed-to summary
 exports.getBalancesSummary = async (req, res) => {
