@@ -418,38 +418,56 @@ exports.settleExpense = async (req, res) => {
         where: { groupID: groupID },
         select: { groupName: true },
       });
-
-      if (groupID) {
+    
+      if (group) {
         const groupExpenses = await prisma.expenses.findMany({
           where: { groupID },
           include: { splits: true },
         });
-      
+    
         if (!groupExpenses || groupExpenses.length === 0) {
           return res.status(400).json({ message: "No expenses found for this group." });
         }
-      
+    
         let totalOwed = 0;
+        const userSplits = [];
+    
+        // Calculate the total owed by the user in the group and track their splits
         groupExpenses.forEach((expense) => {
           expense.splits.forEach((split) => {
             if (split.userID === userID) {
               totalOwed += Number(split.amount);
+              userSplits.push({ splitID: split.id, expenseID: split.expenseID, amount: Number(split.amount) });
             }
           });
         });
-      
+    
         if (settlementAmount > totalOwed) {
           return res.status(400).json({ message: "Settlement amount exceeds total outstanding balance in the group." });
         }
-      
-        // Remove the user's splits for the group
-        await prisma.expenseSplit.deleteMany({
-          where: {
-            userID,
-            expense: { groupID },
-          },
-        });
-      
+    
+        let remainingSettlement = settlementAmount;
+    
+        // Adjust splits based on the settlement amount
+        for (const split of userSplits) {
+          if (remainingSettlement <= 0) break;
+    
+          if (split.amount <= remainingSettlement) {
+            // Fully settle this split
+            await prisma.expenseSplit.delete({
+              where: { id: split.splitID },
+            });
+            remainingSettlement -= split.amount;
+          } else {
+            // Partially settle this split
+            await prisma.expenseSplit.update({
+              where: { id: split.splitID },
+              data: { amount: split.amount - remainingSettlement },
+            });
+            remainingSettlement = 0;
+          }
+        }
+    
         // Log the settlement
         await prisma.settlements.create({
           data: {
@@ -459,19 +477,19 @@ exports.settleExpense = async (req, res) => {
             description: `Settled ${settlementAmount} in group ID ${groupID}.`,
           },
         });
-
-         // Log settlement activity
+    
+        // Log settlement activity
         await prisma.activities.create({
-        data: {
-          userID,
-          action: 'settle_group_expense',
-          description: `You settled ${settlementAmount} in group ID ${group.name}.`,
-        },
-      });
-      
+          data: {
+            userID,
+            action: 'settle_group_expense',
+            description: `You settled ${settlementAmount} in group ${group.groupName}.`,
+          },
+        });
+    
         return res.status(200).json({ message: "Group balance settled successfully." });
-      }      
-    }
+      }
+    }    
   } catch (error) {
     console.error("Error settling expense:", error);
     res.status(500).json({ message: "Failed to settle expense." });
