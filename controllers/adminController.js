@@ -120,17 +120,24 @@ exports.deleteUser = async (req, res) => {
   const { userId } = req.params;
 
   try {
-    // Check if the user is involved in any expenses or splits
     const expenseCount = await prisma.expenses.count({
       where: { paidBy: parseInt(userId) },
     });
     const splitCount = await prisma.expenseSplit.count({
       where: { userID: parseInt(userId) },
     });
+    const balanceCount = await prisma.balances.count({
+      where: {
+        OR: [
+          { friendID: parseInt(userId) },
+          { userID: parseInt(userId) }, 
+        ],
+      },
+    });
 
-    if (expenseCount > 0 || splitCount > 0) {
+    if (expenseCount > 0 || splitCount > 0 || balanceCount>0) {
       return res.status(403).json({
-        message: "User cannot be deleted because they are involved in expenses.",
+        message: "User cannot be deleted because they are involved in some expenses (or) transactions.",
       });
     }
 
