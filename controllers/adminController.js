@@ -22,6 +22,7 @@ exports.getAllUsers = async (req, res) => {
 
 exports.blockUser = async (req, res) => {
   const { userId } = req.params;
+
   try {
     // Block the user
     const user = await prisma.user.update({
@@ -31,11 +32,11 @@ exports.blockUser = async (req, res) => {
 
     // Notify the user's friends about the block
     const friends = await prisma.friends.findMany({
-      where: { OR: [{ userID: userId }, { friendID: userId }] },
+      where: { OR: [{ userID: parseInt(userId) }, { friendID: parseInt(userId) }] },
     });
 
     const activities = friends.map((friend) => ({
-      userID: friend.userID === parseInt(userId) ? friend.friendID : friend.userID,
+      userID: friend.userID === parseInt(userId) ? friend.parseInt(friendID) : friend.parseInt(userID),
       action: "User Blocked",
       description: `${user.name} has been blocked.`,
     }));
@@ -43,12 +44,12 @@ exports.blockUser = async (req, res) => {
     await prisma.activities.createMany({ data: activities });
 
     // Send email to the user
-    const subject = "Account Blocked on FairShare";
+    const subject = "Account Blocked on FinestShare";
     const htmlContent = `
       <p>Dear ${user.name},</p>
       <p>Your account has been temporarily blocked. Please contact support for more details.</p>
       <br />
-      <p>Thank you,<br />FairShare Team</p>
+      <p>Thank you,<br />FinestShare Team</p>
     `;
     await sendMail(user.email, subject, htmlContent);
 
@@ -59,8 +60,50 @@ exports.blockUser = async (req, res) => {
   }
 };
 
+exports.unblockUser = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    // Block the user
+    const user = await prisma.user.update({
+      where: { userID: parseInt(userId) },
+      data: { isBlocked: false },
+    });
+
+    // Notify the user's friends about the block
+    const friends = await prisma.friends.findMany({
+      where: { OR: [{ userID: parseInt(userId) }, { friendID: parseInt(userId) }] },
+    });
+
+    const activities = friends.map((friend) => ({
+      userID: friend.userID === parseInt(userId) ? friend.parseInt(friendID) : friend.parseInt(userID),
+      action: "User Blocked",
+      description: `${user.name} has been unblocked.`,
+    }));
+
+    await prisma.activities.createMany({ data: activities });
+
+    // Send email to the user
+    const subject = "Account unBlocked on FinestShare";
+    const htmlContent = `
+      <p>Dear ${user.name},</p>
+      <p>Your account has been unblocked now. Thank You.</p>
+      <br />
+      <p>Thank you,<br />FinestShare Team</p>
+    `;
+    await sendMail(user.email, subject, htmlContent);
+
+    res.status(200).json({ message: `User ${user.name} has been unblocked` });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to unblock user" });
+  }
+};
+
+
 exports.deleteUser = async (req, res) => {
   const { userId } = req.params;
+
   try {
     // Check if the user is involved in any expenses
     const expenseCount = await prisma.expenses.count({
@@ -76,16 +119,22 @@ exports.deleteUser = async (req, res) => {
       });
     }
 
-    // Delete the user
-    const user = await prisma.user.delete({ where: { userID: parseInt(userId) } });
+    // Delete all related entities in the correct order
+    await prisma.$transaction([
+      prisma.friends.deleteMany({ where: { OR: [{ userID: userId }, { friendID: userId }] } }),
+      prisma.groupMember.deleteMany({ where: { userID: userId } }),
+      prisma.activities.deleteMany({ where: { userID: userId } }),
+      prisma.group.deleteMany({ where: { createdBy: userId } }),
+      prisma.user.delete({ where: { userID: userId } }),
+    ]);
 
     // Send email to the user
-    const subject = "Account Deleted on FairShare";
+    const subject = "Account Deleted on FinestShare";
     const htmlContent = `
       <p>Dear ${user.name},</p>
-      <p>Your account has been successfully deleted from FairShare.</p>
+      <p>Your account has been successfully deleted from FinestShare.</p>
       <br />
-      <p>Thank you,<br />FairShare Team</p>
+      <p>Thank you,<br />FinestShare Team</p>
     `;
     await sendMail(user.email, subject, htmlContent);
 
@@ -124,9 +173,10 @@ exports.getAllFeedback = async (req, res) => {
 
 exports.resolveFeedback = async (req, res) => {
   const { feedbackId } = req.params;
+
   try {
     const feedback = await prisma.feedback.update({
-      where: { id: feedbackId },
+      where: { id: parseInt(feedbackId) },
       data: { resolved: true },
     });
     res.status(200).json({ message: `Feedback ${feedbackId} marked as resolved` });

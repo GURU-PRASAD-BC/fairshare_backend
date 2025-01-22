@@ -3,6 +3,7 @@ const { isAdmin } = require('../middlewares/authMiddleware'); // Middleware to v
 const {
   getAllUsers,
   blockUser,
+  unblockUser,
   deleteUser,
   promoteUser,
   getAllFeedback,
@@ -15,6 +16,7 @@ const router = express.Router();
 // User Management
 router.get('/users', isAdmin, getAllUsers);
 router.post('/users/block/:userId', isAdmin, blockUser);
+router.post('/users/unblock/:userId', isAdmin, unblockUser);
 router.delete('/users/:userId', isAdmin, deleteUser);
 router.put('/users/promote/:userId', isAdmin, promoteUser);
 

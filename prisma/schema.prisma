@@ -39,7 +39,7 @@ model User {
   activities   Activities[]
   balances     Balances[]      @relation("UserBalances")
   owedBalances Balances[]      @relation("FriendBalances")
-  feedbacks    Feedback[] 
+  feedbacks    Feedback[]     @relation("userFeedbacks")
   settlements  Settlements[]  @relation("userSettlements")
   friendSettlements Settlements[] @relation("FriendSettlements")
 }
@@ -138,5 +138,5 @@ model Feedback {
   resolved    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  User        User     @relation(fields: [userId], references: [userID])
+  User        User     @relation("userFeedbacks",fields: [userId], references: [userID])
 }
