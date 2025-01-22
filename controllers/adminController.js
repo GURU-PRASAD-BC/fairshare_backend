@@ -182,9 +182,24 @@ exports.promoteUser = async (req, res) => {
       where: { userID: Number(userId) },
       data: { role: 'ADMIN' },
     });
-    console.log(user);
+
+    const admins = await prisma.user.findMany({
+      where: { role: 'ADMIN' },
+      select: { userID: true }, 
+    });
+
+    // Create activity records for all admins
+    const adminActivities = admins.map((admin) => ({
+      userID: admin.userID,
+      action: "User Promotion",
+      description: `${user.name} has been promoted to an admin.`,
+    }));
+
+    await prisma.activities.createMany({ data: adminActivities });
+
     res.status(200).json({ message: `User ${user.name} promoted to admin` });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Failed to promote user" });
   }
 };
