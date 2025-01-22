@@ -228,7 +228,7 @@ exports.getBalanceWithFriend = async (req, res) => {
     });
 
     if (expensesWithFriend.length === 0) {
-      return res.status(200).json({ message: 'No transactions exist between you and the specified friend.' });
+      return res.status(200).json({ message: 'No balances exist between you and the specified friend.' });
     }
 
     let iOwe = 0;
