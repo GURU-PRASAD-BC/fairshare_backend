@@ -381,17 +381,16 @@ exports.inviteFriend = async (req, res) => {
 
 // Add Feedback
 exports.addFeedback = async (req, res) => {
-  const userID = req.user.userID;
-  const { message } = req.body;
+  const { userID,message } = req.body;
 
-  if (!userId || !message) {
+  if (!userID || !message) {
     return res.status(400).json({ error: "User ID and message are required" });
   }
 
   try {
     const feedback = await prisma.feedback.create({
       data: {
-        userId,
+        userID,
         message,
       },
     });
