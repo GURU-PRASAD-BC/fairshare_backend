@@ -1,9 +1,9 @@
 const prisma = require("../config/prismaClient");
-const { sendFriendInvitationMail } = require("../utils/mailer");
+const { sendFriendInvitationMail,sendMail } = require("../utils/mailer");
 
 // Add a friend by email
 const addFriend = async (req, res) => {
-    const { friendEmail } = req.body; 
+    const { friendEmail,message } = req.body; 
     const userID = req.user.userID; 
 
     if (!friendEmail) {
@@ -37,7 +37,17 @@ const addFriend = async (req, res) => {
         return res.status(201).json({ message: "Friend added successfully!" });
       } else {
         // If the user does not exist, send an invitation email
-        await sendFriendInvitationMail(friendEmail, "Splitwise Group");
+        //await sendFriendInvitationMail(friendEmail, "Splitwise Group");
+
+        const htmlContent = `
+        <h1>Connect on FinestShare</h1>
+        <p>You have been invited to join FinestShare and connect as a friend.</p>
+        <p>${message || "Let's connect and manage expenses together!"}</p>
+        <p>Click <a href="https://finestshare.vercel.app">here</a> to sign up and start sharing expenses.</p>
+        <br />
+        <img src="https://assets.splitwise.com/assets/pro/logo-337b1a7d372db4b56c075c7893d68bfc6873a65d2f77d61b27cb66b6d62c976c.svg" alt="Splitwise App" style="width:300px;height:auto;"/>
+    `;
+        await sendMail(friendEmail, "FinestShare Invite", htmlContent);
         return res.status(200).json({ message: "Invitation email sent successfully!" });
       }
     } catch (error) {
