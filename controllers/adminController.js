@@ -12,6 +12,7 @@ exports.getAllUsers = async (req, res) => {
         email: true,
         image: true,
         role: true,
+        isBlocked:true,
       }
     });
     res.status(200).json(users);
