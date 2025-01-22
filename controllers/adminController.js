@@ -30,18 +30,26 @@ exports.blockUser = async (req, res) => {
       data: { isBlocked: true },
     });
 
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
     // Notify the user's friends about the block
     const friends = await prisma.friends.findMany({
       where: { OR: [{ userID: parseInt(userId) }, { friendID: parseInt(userId) }] },
     });
 
-    const activities = friends.map((friend) => ({
-      userID: friend.userID === parseInt(userId) ? friend.parseInt(friendID) : friend.parseInt(userID),
-      action: "User Blocked",
-      description: `${user.name} has been blocked.`,
-    }));
+    if (friends.length > 0) {
+      const activities = friends.map((friend) => ({
+        userID: friend.userID === parseInt(userId)
+          ? parseInt(friend.friendID)
+          : parseInt(friend.userID),
+        action: "User Blocked",
+        description: `${user.name} has been blocked.`,
+      }));
 
-    await prisma.activities.createMany({ data: activities });
+      await prisma.activities.createMany({ data: activities });
+    }
 
     // Send email to the user
     const subject = "Account Blocked on FinestShare";
@@ -64,30 +72,38 @@ exports.unblockUser = async (req, res) => {
   const { userId } = req.params;
 
   try {
-    // Block the user
+    // Unblock the user
     const user = await prisma.user.update({
       where: { userID: parseInt(userId) },
       data: { isBlocked: false },
     });
 
-    // Notify the user's friends about the block
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Notify the user's friends about the unblock
     const friends = await prisma.friends.findMany({
       where: { OR: [{ userID: parseInt(userId) }, { friendID: parseInt(userId) }] },
     });
 
-    const activities = friends.map((friend) => ({
-      userID: friend.userID === parseInt(userId) ? friend.parseInt(friendID) : friend.parseInt(userID),
-      action: "User Blocked",
-      description: `${user.name} has been unblocked.`,
-    }));
+    if (friends.length > 0) {
+      const activities = friends.map((friend) => ({
+        userID: friend.userID === parseInt(userId) 
+          ? parseInt(friend.friendID) 
+          : parseInt(friend.userID),
+        action: "User Unblocked",
+        description: `${user.name} has been unblocked.`,
+      }));
 
-    await prisma.activities.createMany({ data: activities });
+      await prisma.activities.createMany({ data: activities });
+    }
 
     // Send email to the user
-    const subject = "Account unBlocked on FinestShare";
+    const subject = "Account Unblocked on FinestShare";
     const htmlContent = `
       <p>Dear ${user.name},</p>
-      <p>Your account has been unblocked now. Thank You.</p>
+      <p>Your account has been unblocked. Thank you for your patience.</p>
       <br />
       <p>Thank you,<br />FinestShare Team</p>
     `;
@@ -100,12 +116,11 @@ exports.unblockUser = async (req, res) => {
   }
 };
 
-
 exports.deleteUser = async (req, res) => {
   const { userId } = req.params;
 
   try {
-    // Check if the user is involved in any expenses
+    // Check if the user is involved in any expenses or splits
     const expenseCount = await prisma.expenses.count({
       where: { paidBy: parseInt(userId) },
     });
@@ -121,22 +136,28 @@ exports.deleteUser = async (req, res) => {
 
     // Delete all related entities in the correct order
     await prisma.$transaction([
-      prisma.friends.deleteMany({ where: { OR: [{ userID: userId }, { friendID: userId }] } }),
-      prisma.groupMember.deleteMany({ where: { userID: userId } }),
-      prisma.activities.deleteMany({ where: { userID: userId } }),
-      prisma.group.deleteMany({ where: { createdBy: userId } }),
-      prisma.user.delete({ where: { userID: userId } }),
+      prisma.friends.deleteMany({ where: { OR: [{ userID: parseInt(userId) }, { friendID: parseInt(userId) }] } }),
+      prisma.groupMember.deleteMany({ where: { userID: parseInt(userId) } }),
+      prisma.activities.deleteMany({ where: { userID: parseInt(userId) } }),
+      prisma.group.deleteMany({ where: { createdBy: parseInt(userId) } }),
+      prisma.user.delete({ where: { userID: parseInt(userId) } }),
     ]);
 
     // Send email to the user
-    const subject = "Account Deleted on FinestShare";
-    const htmlContent = `
-      <p>Dear ${user.name},</p>
-      <p>Your account has been successfully deleted from FinestShare.</p>
-      <br />
-      <p>Thank you,<br />FinestShare Team</p>
-    `;
-    await sendMail(user.email, subject, htmlContent);
+    const user = await prisma.user.findUnique({
+      where: { userID: parseInt(userId) },
+    });
+
+    if (user) {
+      const subject = "Account Deleted on FinestShare";
+      const htmlContent = `
+        <p>Dear ${user.name},</p>
+        <p>Your account has been successfully deleted from FinestShare.</p>
+        <br />
+        <p>Thank you,<br />FinestShare Team</p>
+      `;
+      await sendMail(user.email, subject, htmlContent);
+    }
 
     res.status(200).json({ message: "User deleted successfully" });
   } catch (error) {
@@ -144,7 +165,6 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({ error: "Failed to delete user" });
   }
 };
-
 
 exports.promoteUser = async (req, res) => {
   const { userId } = req.params;
