@@ -382,6 +382,7 @@ exports.inviteFriend = async (req, res) => {
 // Add Feedback
 exports.addFeedback = async (req, res) => {
   const { userId,message } = req.body;
+  console.log(userId,message)
 
   if (!userId || !message) {
     return res.status(400).json({ error: "User ID and message are required" });

@@ -57,6 +57,7 @@ exports.blockUser = async (req, res) => {
     const htmlContent = `
       <p>Dear ${user.name},</p>
       <p>Your account has been temporarily blocked. Please contact support for more details.</p>
+      <p>Support Email: finestshare@gmail.com</p>
       <br />
       <p>Thank you,<br />FinestShare Team</p>
     `;
@@ -160,7 +161,8 @@ exports.deleteUser = async (req, res) => {
       const subject = "Account Deleted on FinestShare";
       const htmlContent = `
         <p>Dear ${user.name},</p>
-        <p>Your account has been successfully deleted from FinestShare.</p>
+        <p>Your account has been deleted from FinestShare by the Team.</p>
+        <p>Support Email: finestshare@gmail.com</p>
         <br />
         <p>Thank you,<br />FinestShare Team</p>
       `;

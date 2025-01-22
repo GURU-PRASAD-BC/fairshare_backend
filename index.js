@@ -4,8 +4,6 @@ const session = require('express-session');
 const passport = require('passport');
 require('./config/passportSetup');
 const cors = require("cors");
-const helmet = require("helmet");
-const morgan = require("morgan");
 const prisma = require("./config/prismaClient"); 
 const userRoutes = require("./routes/userRoutes");
 const groupRoutes = require('./routes/groupRoutes');
