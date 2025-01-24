@@ -14,12 +14,16 @@ router.get("/google/callback",passport.authenticate("google", { failureRedirect:
     if (!req.user) {
       return res.status(401).json({ error: "Authentication failed" });
     }
-    const token = jwt.sign({ id: req.user.userID, email: req.user.email, role: req.user.role }, JWT_SECRET, { expiresIn: "1d" });
-    //res.status(200).json({ message: "Login successful", token });
-
      // Redirect to the frontend with the token
      const frontendURL = process.env.FRONTEND_URL || "http://192.168.0.126:3000";
-     res.redirect(`${frontendURL}/redirectPage/?token=${token}`);
+
+     if (req.user.isBlocked) {
+      return  res.redirect(`${frontendURL}/auth/login/?userBlocked=true`);
+    }
+
+    const token = jwt.sign({ id: req.user.userID, email: req.user.email, role: req.user.role }, JWT_SECRET, { expiresIn: "1d" });
+    //res.status(200).json({ message: "Login successful", token });
+    res.redirect(`${frontendURL}/redirectPage/?token=${token}`);
   }
 );
 

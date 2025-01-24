@@ -16,17 +16,21 @@ const authenticateUser = async (req, res, next) => {
       return res.status(401).json({ message: 'Unauthorized: Please log in' });
     }
 
+    // Attach user ID from JWT
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.userID = decoded.id; // Attach user ID from JWT
+    req.userID = decoded.id;
     //console.log(req.userID,decoded.id)
 
-    // Optionally, fetch the user from the database if more details are needed
     const user = await prisma.user.findUnique({ where: { userID: req.userID } });
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+    // req.user = user;
 
-    req.user = user; // Attach user details for convenience
+    if (!(user.isBlocked)) {
+      return res.status(403).json({ message: "You are temporarily blocked from this website" });
+    }
+
     next();
   } catch (err) {
     console.error(err);
