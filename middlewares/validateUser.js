@@ -27,7 +27,7 @@ const authenticateUser = async (req, res, next) => {
     }
     //req.user = user;
 
-    if (!(user.isBlocked)) {
+    if (user.isBlocked) {
       return res.status(403).json({ message: "You are temporarily blocked from this website" });
     }
 
