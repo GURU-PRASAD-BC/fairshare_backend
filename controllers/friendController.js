@@ -4,7 +4,7 @@ const { sendFriendInvitationMail,sendMail } = require("../utils/mailer");
 // Add a friend by email
 const addFriend = async (req, res) => {
     const { friendEmail,message } = req.body; 
-    const {userID} = req.userID; 
+    const userID = req.user.userID; 
 
     if (!friendEmail) {
       return res.status(400).json({ message: "Friend's email is required" });
@@ -60,7 +60,7 @@ const addFriend = async (req, res) => {
 
 // Get friends list
 const getFriends = async (req, res) => {
-  const {userID} = req.userID; 
+  const userID = req.user.userID; 
 
   try {
     const friends = await prisma.friends.findMany({
@@ -84,7 +84,7 @@ const getFriends = async (req, res) => {
 // Remove a friend
 const removeFriend = async (req, res) => {
   const { friendID } = req.params;
-  const {userID} = req.userID; 
+  const userID = req.user.userID; 
 
   try {
     // Delete mutual friendship entries
