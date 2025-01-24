@@ -563,12 +563,16 @@ exports.getSettlements = async (req, res) => {
   const { userID } = req;
   try {
     const settlements = await prisma.settlements.findMany({
-      where:{
-        OR:[
-          {userID:parseInt(userID)},
-          {friendID:parseInt(userID)}
+      where: {
+        OR: [
+          { userID: parseInt(userID) }, 
+          { friendID: parseInt(userID) }, 
         ],
-      }
+      },
+      include: {
+        friend: { select: { name: true } }, 
+        group: { select: { groupName: true } }, 
+      },
     });
     res.status(200).json(settlements);
   } catch (error) {
