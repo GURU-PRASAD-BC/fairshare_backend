@@ -280,9 +280,17 @@ exports.viewGroupDetails = async (req, res) => {
       return res.status(403).json({ message: 'You are not authorized to view this group' });
     }
 
+    const creator=await prisma.user.findUnique({
+      where:{userID:parseInt(group.createdBy)},
+      select:{
+        name:true,
+      }
+    })
+
     // Restructure the members to include only the user details
     const groupWithFilteredMembers = {
       ...group,
+      createdByName:creator.name,
       members: group.members.map(member => member.user),
     };
 

@@ -404,7 +404,7 @@ exports.settleExpense = async (req, res) => {
         data: {
           userID,
           action: 'settle_expense',
-          description: `You settled ${settlementAmount} with friend ID ${friend.name}.`,
+          description: `You settled ${settlementAmount} with friend ${friend.name}.`,
         },
       });
 
@@ -581,8 +581,8 @@ exports.getSettlements = async (req, res) => {
         amount: settlement.amount,
         timestamp: settlement.timestamp,
         description: settlement.description,
-        name: settlement.friend?.name || settlement.group?.groupName || null, // Include friend name or group name
-        type: settlement.friend ? "Friend" : settlement.group ? "Group" : null, // Identify the type of settlement
+        name: settlement.friend?.name || settlement.group?.groupName || null, 
+        type: settlement.friend ? "Friend" : settlement.group ? "Group" : null, 
       };
     }).filter(settlement => settlement.name !== null);
 
