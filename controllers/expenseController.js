@@ -144,8 +144,13 @@ exports.getUserExpenses = async (req, res) => {
 
   try {
     const expenses = await prisma.expenses.findMany({
-      where: { paidBy: Number(userID) },
-      include: {splits: true},
+      where: {
+        OR: [
+          { paidBy: Number(userID) }, 
+          { splits: { some: { userID: Number(userID) } } }, 
+        ],
+      },
+      include: { splits: true },
     });
 
     res.status(200).json(expenses);
