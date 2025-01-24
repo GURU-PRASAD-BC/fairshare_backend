@@ -2,7 +2,7 @@ const prisma = require("../config/prismaClient");
 
 // Get recent activities for a user
 exports.getUserActivities = async (req, res) => {
-  const userID = req.user.userID; // Assuming `req.user` contains the authenticated user
+  const {userID} = req.userID; // Assuming `req.user` contains the authenticated user
 
   try {
     const activities = await prisma.activities.findMany({
