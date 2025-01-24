@@ -574,7 +574,19 @@ exports.getSettlements = async (req, res) => {
         group: { select: { groupName: true } }, 
       },
     });
-    res.status(200).json(settlements);
+
+    const transformedSettlements = settlements.map((settlement) => {
+      return {
+        id: settlement.id,
+        amount: settlement.amount,
+        timestamp: settlement.timestamp,
+        description: settlement.description,
+        name: settlement.friend?.name || settlement.group?.groupName || null, // Include friend name or group name
+        type: settlement.friend ? "Friend" : settlement.group ? "Group" : null, // Identify the type of settlement
+      };
+    }).filter(settlement => settlement.name !== null);
+
+    res.status(200).json(transformedSettlements);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch settlements" });
   }
