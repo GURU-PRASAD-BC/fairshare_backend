@@ -476,7 +476,7 @@ exports.settleExpense = async (req, res) => {
             userID,
             groupID,
             amount: settlementAmount,
-            description: `Settled ${settlementAmount} in group ID ${group.groupID}.`,
+            description: `Settled ${settlementAmount} in group ${group.groupName}.`,
           },
         });
     
@@ -550,5 +550,23 @@ exports.settleAllOwes = async (req, res) => {
   } catch (error) {
     console.error("Error settling all owes:", error);
     res.status(500).json({ message: 'Failed to settle all debts.' });
+  }
+};
+
+//get settlements of a user
+exports.getSettlements = async (req, res) => {
+  const { userID } = req;
+  try {
+    const settlements = await prisma.settlements.findMany({
+      where:{
+        OR:[
+          {userID:parseInt(userID)},
+          {friendID:parseInt(userID)}
+        ],
+      }
+    });
+    res.status(200).json(settlements);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch settlements" });
   }
 };

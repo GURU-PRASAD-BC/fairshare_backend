@@ -10,6 +10,7 @@ const {
   getBalances,
   getBalanceWithFriend,
   settleExpense,
+  getSettlements,
   getBalancesSummary,
   settleAllOwes,
 } = require('../controllers/expenseController');
@@ -33,6 +34,8 @@ router.get('/balances-summary', authenticateUser,getBalancesSummary);
 
 // Settle an expense
 router.post('/settle', authenticateUser, settleExpense);
+// Get Settlements
+router.get('/settle', authenticateUser, getSettlements);
 // Settle all expenses
 router.post('/balances/settleAll', authenticateUser, settleAllOwes);
 
