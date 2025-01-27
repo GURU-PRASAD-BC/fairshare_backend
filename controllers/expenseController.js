@@ -577,7 +577,6 @@ exports.settleAllOwes = async (req, res) => {
   }
 };
 
-//get settlements of a user
 exports.getSettlements = async (req, res) => {
   const { userID } = req;
   try {
@@ -602,11 +601,13 @@ exports.getSettlements = async (req, res) => {
         description: settlement.description,
         name: settlement.friend?.name || settlement.group?.groupName || null, 
         type: settlement.friend ? "Friend" : settlement.group ? "Group" : null, 
+        isVerified: settlement.friendID === parseInt(userID) ? settlement.isVerified : undefined, // Show `isVerified` only for settlements the user receives
       };
     }).filter(settlement => settlement.name !== null);
 
     res.status(200).json(transformedSettlements);
   } catch (error) {
+    console.error("Error fetching settlements:", error);
     res.status(500).json({ error: "Failed to fetch settlements" });
   }
 };

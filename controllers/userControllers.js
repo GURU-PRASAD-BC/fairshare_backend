@@ -95,7 +95,7 @@ exports.getLoggedInUser = async (req, res) => {
         userID: true,
         name: true,
         email: true,
-        phone:true,
+        phone:true, 
         image: true,
         role: true,
         upiID:true,
