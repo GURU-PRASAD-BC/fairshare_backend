@@ -437,12 +437,12 @@ exports.settleExpense = async (req, res) => {
       // Settle within a group
       const group = await prisma.group.findUnique({
         where: { groupID: groupID },
-        select: { groupName: true },
+        select: { groupName: true},
       });
 
       if (group) {
         const groupExpenses = await prisma.expenses.findMany({
-          where: { groupID },
+          where: { groupID ,paidBy},
           include: { splits: true },
         });
 
@@ -494,6 +494,7 @@ exports.settleExpense = async (req, res) => {
           data: {
             userID,
             groupID,
+            friendID:parseInt(groupExpenses.paidBy),
             amount: settlementAmount,
             upiID: upiID || null,
             transactionID: upiID ? transactionID || null : null,
@@ -601,7 +602,7 @@ exports.getSettlements = async (req, res) => {
         description: settlement.description,
         name: settlement.friend?.name || settlement.group?.groupName || null, 
         type: settlement.friend ? "Friend" : settlement.group ? "Group" : null, 
-        isVerified: settlement.friendID === parseInt(userID) ? settlement.isVerified : undefined, // Show `isVerified` only for settlements the user receives
+        isVerified: settlement.friendID === parseInt(userID) || settlement.userID === parseInt(userID) ? settlement.isVerified : undefined, 
       };
     }).filter(settlement => settlement.name !== null);
 
@@ -627,7 +628,7 @@ exports.verifySettlement = async (req, res) => {
       return res.status(404).json({ message: "Settlement not found." });
     }
 
-    if (settlement.userID !== userID) {
+    if (settlement.friendID !== parseInt(userID)) {
       return res.status(403).json({ message: "You are not authorized to verify this settlement." });
     }
 

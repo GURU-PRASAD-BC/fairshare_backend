@@ -23,6 +23,14 @@ exports.createGroup = async (req, res) => {
       },
     });
 
+     // Add the creator as a member
+     await prisma.groupMember.create({
+      data: {
+        groupID: newGroup.groupID,
+        userID: req.userID,
+      },
+    });
+
      // Log activity for group creation
      await prisma.activities.create({
       data: {
@@ -42,7 +50,7 @@ exports.createGroup = async (req, res) => {
         user = await prisma.user.findUnique({ where: { email: member.email } });
 
         if (user && user.userID === req.userID) {
-          return res.status(400).json({ message: `You cannot add yourself (${member.email}) as a group member.` });
+          return res.status(400).json({ message: `Skipping adding the creator (${member.email}) as a member again.` });
         }
       } else {
         emailnotify=false;
