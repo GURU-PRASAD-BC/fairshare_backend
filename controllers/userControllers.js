@@ -98,6 +98,7 @@ exports.getLoggedInUser = async (req, res) => {
         phone:true,
         image: true,
         role: true,
+        upiID:true,
         groups: {
           select: {
             groupID: true,
