@@ -442,7 +442,7 @@ exports.settleExpense = async (req, res) => {
 
       if (group) {
         const groupExpenses = await prisma.expenses.findMany({
-          where: { groupID ,paidBy},
+          where: { groupID},
           include: { splits: true },
         });
 
@@ -494,7 +494,6 @@ exports.settleExpense = async (req, res) => {
           data: {
             userID,
             groupID,
-            friendID:parseInt(groupExpenses.paidBy),
             amount: settlementAmount,
             upiID: upiID || null,
             transactionID: upiID ? transactionID || null : null,
