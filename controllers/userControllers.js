@@ -190,16 +190,16 @@ exports.getLoggedInUser = async (req, res) => {
   }
 };
 
-
-//Update the user
+// Update the user
 exports.updateUser = async (req, res) => {
   try {
-    const { name, password, image, phone } = req.body;
+    const { name, password, image, phone, upiID } = req.body;
     const authHeader = req.headers.authorization;
+
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({ error: "Authorization token is missing or invalid" });
     }
-  
+
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, JWT_SECRET);
 
@@ -208,6 +208,7 @@ exports.updateUser = async (req, res) => {
     if (password) updateData.password = await bcrypt.hash(password, SALT_ROUNDS);
     if (image) updateData.image = image;
     if (phone) updateData.phone = phone;
+    if (upiID) updateData.upiID = upiID;
 
     const updatedUser = await prisma.user.update({
       where: { userID: decoded.id },
@@ -216,7 +217,7 @@ exports.updateUser = async (req, res) => {
 
     res.status(200).json({ message: "User updated successfully", user: updatedUser });
   } catch (err) {
-    console.error(err);
+    console.error("Error updating user:", err);
     res.status(500).json({ message: "Something went wrong" });
   }
 };

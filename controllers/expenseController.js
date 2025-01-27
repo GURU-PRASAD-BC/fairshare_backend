@@ -325,14 +325,14 @@ exports.getBalancesSummary = async (req, res) => {
 };
 
 
+//settle expense/split
 exports.settleExpense = async (req, res) => {
   const userID = req.user.userID;
-  const { friendID, groupID, amount } = req.body;
+  const { friendID, groupID, amount, upiID, transactionID } = req.body;
 
-  console.log(userID,friendID, groupID, amount)
+  //console.log(userID, friendID, groupID, amount, upiID, transactionID);
 
   try {
-    // Validate inputs
     if (!friendID && !groupID) {
       return res.status(400).json({ message: "Either 'friendID' or 'groupID' must be provided." });
     }
@@ -399,6 +399,20 @@ exports.settleExpense = async (req, res) => {
         },
       });
 
+      // Log settlement with optional UPI transaction
+      await prisma.settlements.create({
+        data: {
+          userID,
+          friendID,
+          amount: settlementAmount,
+          upiID: upiID || null,
+          transactionID: upiID ? transactionID || null : null,
+          description: `Settled ${settlementAmount} with friend ${friend.name} via ${
+            upiID ? "UPI" : "cash"
+          }.`,
+        },
+      });
+
       // Log settlement activity
       await prisma.activities.create({
         data: {
@@ -425,20 +439,20 @@ exports.settleExpense = async (req, res) => {
         where: { groupID: groupID },
         select: { groupName: true },
       });
-    
+
       if (group) {
         const groupExpenses = await prisma.expenses.findMany({
           where: { groupID },
           include: { splits: true },
         });
-    
+
         if (!groupExpenses || groupExpenses.length === 0) {
           return res.status(400).json({ message: "No expenses found for this group." });
         }
-    
+
         let totalOwed = 0;
         const userSplits = [];
-    
+
         // Calculate the total owed by the user in the group and track their splits
         groupExpenses.forEach((expense) => {
           expense.splits.forEach((split) => {
@@ -448,17 +462,17 @@ exports.settleExpense = async (req, res) => {
             }
           });
         });
-    
+
         if (settlementAmount > totalOwed) {
           return res.status(400).json({ message: "Settlement amount exceeds total outstanding balance in the group." });
         }
-    
+
         let remainingSettlement = settlementAmount;
-    
+
         // Adjust splits based on the settlement amount
         for (const split of userSplits) {
           if (remainingSettlement <= 0) break;
-    
+
           if (split.amount <= remainingSettlement) {
             // Fully settle this split
             await prisma.expenseSplit.delete({
@@ -474,17 +488,21 @@ exports.settleExpense = async (req, res) => {
             remainingSettlement = 0;
           }
         }
-    
-        // Log the settlement
+
+        // Log the settlement with optional UPI transaction
         await prisma.settlements.create({
           data: {
             userID,
             groupID,
             amount: settlementAmount,
-            description: `Settled ${settlementAmount} in group ${group.groupName}.`,
+            upiID: upiID || null,
+            transactionID: upiID ? transactionID || null : null,
+            description: `Settled ${settlementAmount} in group ${group.groupName} via ${
+              upiID ? "UPI" : "cash"
+            }.`,
           },
         });
-    
+
         // Log settlement activity
         await prisma.activities.create({
           data: {
@@ -493,15 +511,16 @@ exports.settleExpense = async (req, res) => {
             description: `You settled ${settlementAmount} in group ${group.groupName}.`,
           },
         });
-    
+
         return res.status(200).json({ message: "Group balance settled successfully." });
       }
-    }    
+    }
   } catch (error) {
     console.error("Error settling expense:", error);
     res.status(500).json({ message: "Failed to settle expense." });
   }
 };
+
 
 // Settle all owes for a user
 exports.settleAllOwes = async (req, res) => {
@@ -591,3 +610,35 @@ exports.getSettlements = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch settlements" });
   }
 };
+
+//verify the settlement
+exports.verifySettlement = async (req, res) => {
+  const { settlementID } = req.params;
+  const userID = req.user.userID; 
+  try {
+    // Fetch the settlement record
+    const settlement = await prisma.settlements.findUnique({
+      where: { id: Number(settlementID) },
+      select: { userID: true }, 
+    });
+
+    if (!settlement) {
+      return res.status(404).json({ message: "Settlement not found." });
+    }
+
+    if (settlement.userID !== userID) {
+      return res.status(403).json({ message: "You are not authorized to verify this settlement." });
+    }
+
+    const updatedSettlement = await prisma.settlements.update({
+      where: { id: Number(settlementID) },
+      data: { isVerified: true },
+    });
+
+    res.status(200).json(updatedSettlement);
+  } catch (error) {
+    console.error("Error verifying settlement:", error);
+    res.status(500).json({ message: "Failed to verify settlement." });
+  }
+};
+

@@ -21,14 +21,20 @@ enum Type {
   Others
 }
 
+enum Role {
+  user
+  ADMIN
+}
+
 model User {
   userID       Int             @id @default(autoincrement())
   name         String
   email        String          @unique
   password     String
-  role         String          @default("user")
+  role         String            //user, ADMIN
   image        String?
   phone        String?         @unique
+  upiID        String?         @unique
   isBlocked    Boolean         @default(false)
   friends      Friends[]       @relation("UserFriends")
   friendOf     Friends[]       @relation("FriendOf")
@@ -115,7 +121,10 @@ model Settlements {
   groupID      Int?    
   amount       Decimal  @db.Decimal(20, 2) 
   timestamp    DateTime @default(now())    
-  description  String?                    
+  description  String?   
+  upiID        String?         
+  transactionID String?       
+  isVerified   Boolean  @default(false)              
   user         User     @relation("userSettlements",fields: [userID], references: [userID])
   friend       User?    @relation("FriendSettlements",fields: [friendID], references: [userID])
   group        Group?   @relation(fields: [groupID], references: [groupID])
