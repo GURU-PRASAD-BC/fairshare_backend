@@ -14,6 +14,7 @@ const {
   verifySettlement,
   getBalancesSummary,
   settleAllOwes,
+  downloadExpensesCSV
 } = require('../controllers/expenseController');
 
 // Add an expense
@@ -32,6 +33,8 @@ router.get('/balances', authenticateUser, getBalances);
 router.get('/balances/:friendID', authenticateUser,getBalanceWithFriend);
 // Get Summary of balances
 router.get('/balances-summary', authenticateUser,getBalancesSummary);
+// Get Summary of balances
+router.get('/csv', authenticateUser,downloadExpensesCSV);
 
 // Settle an expense
 router.post('/settle', authenticateUser, settleExpense);

@@ -58,11 +58,20 @@ const addFriend = async (req, res) => {
   module.exports = { addFriend };
   
 
-// Get friends list
+// Get friends list with paginaton
 const getFriends = async (req, res) => {
-  const userID = req.user.userID; 
+  const userID = req.user.userID;
 
   try {
+    // Extract page and limit from query parameters with defaults
+    const page = parseInt(req.query.page) || 1; 
+    const limit = parseInt(req.query.limit) || 10; 
+    const skip = (page - 1) * limit; 
+
+    const totalFriends = await prisma.friends.count({
+      where: { userID },
+    });
+
     const friends = await prisma.friends.findMany({
       where: { userID },
       include: {
@@ -70,13 +79,20 @@ const getFriends = async (req, res) => {
           select: { userID: true, name: true, email: true, image: true },
         },
       },
+      skip: skip,
+      take: limit,
     });
 
     const friendsList = friends.map((f) => f.friend);
 
-    res.status(200).json(friendsList);
+    res.status(200).json({
+      friends: friendsList,
+      totalFriends,
+      currentPage: page,
+      totalPages: Math.ceil(totalFriends / limit),
+    });
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching friends list:", error);
     res.status(500).json({ message: "Failed to fetch friends list." });
   }
 };

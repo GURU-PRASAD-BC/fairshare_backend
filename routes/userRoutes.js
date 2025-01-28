@@ -23,7 +23,16 @@ router.get("/google/callback",passport.authenticate("google", { failureRedirect:
 
     const token = jwt.sign({ id: req.user.userID, email: req.user.email, role: req.user.role }, JWT_SECRET, { expiresIn: "1d" });
     //res.status(200).json({ message: "Login successful", token });
-    res.redirect(`${frontendURL}/redirectPage/?token=${token}`);
+
+    //httpOnly cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: true, 
+      sameSite: "Strict",
+      maxAge: 24 * 60 * 60 * 1000, 
+      });
+
+    res.redirect(`${frontendURL}/redirectPage/`);
   }
 );
 
@@ -47,5 +56,16 @@ router.post("/reset-password", resetPassword);
 router.post("/invite-friend", inviteFriend);
 // Add Feedback
 router.post("/feedback", addFeedback);
+
+//logout
+router.post("/logout", (req, res) => {
+      res.clearCookie("token", {
+        httpOnly: true,
+        secure:true,
+        sameSite: "Strict",
+      });
+      res.status(200).json({ message: "Logged out successfully" });
+    }
+);
 
 module.exports = router;

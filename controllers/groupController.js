@@ -310,9 +310,29 @@ exports.viewGroupDetails = async (req, res) => {
 };
 
 
-// View all groups related to the user
+// View all groups related to the user with pagination
 exports.viewUserGroups = async (req, res) => {
   try {
+    // Extract page and limit from query parameters 
+    const page = parseInt(req.query.page) || 1; 
+    const limit = parseInt(req.query.limit) || 10; 
+    const skip = (page - 1) * limit; 
+
+    const totalGroups = await prisma.group.count({
+      where: {
+        OR: [
+          { createdBy: req.userID },
+          {
+            members: {
+              some: {
+                userID: req.userID,
+              },
+            },
+          },
+        ],
+      },
+    });
+
     const userGroups = await prisma.group.findMany({
       where: {
         OR: [
@@ -326,21 +346,32 @@ exports.viewUserGroups = async (req, res) => {
           },
         ],
       },
-      include: { members: { include: { 
-        user: {
-        select: {
-          userID: true,
-          name: true,
-          email: true,
-          image:true,
-        },} 
-       } 
-      } },
+      include: {
+        members: {
+          include: {
+            user: {
+              select: {
+                userID: true,
+                name: true,
+                email: true,
+                image: true,
+              },
+            },
+          },
+        },
+      },
+      skip: skip, 
+      take: limit, 
     });
 
-    res.status(200).json({ groups: userGroups });
+    res.status(200).json({
+      groups: userGroups,
+      currentPage: page,
+      totalGroups,
+      totalPages: Math.ceil(totalGroups / limit),
+    });
   } catch (error) {
-    console.error('Error fetching user groups:', error);
-    res.status(500).json({ message: 'Failed to fetch groups' });
+    console.error("Error fetching user groups:", error);
+    res.status(500).json({ message: "Failed to fetch groups" });
   }
 };

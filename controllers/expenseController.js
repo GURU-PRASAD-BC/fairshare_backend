@@ -1,4 +1,7 @@
 const prisma = require('../config/prismaClient');
+const { Parser } = require('json2csv');
+const fs = require('fs');
+const path = require('path');
 
 // Add an expense
 exports.addExpense = async (req, res) => {
@@ -92,7 +95,7 @@ exports.addExpense = async (req, res) => {
       data: {
         userID: paidBy,
         action: 'expense_paid',
-        description: `You paid ${amount} for an expense in group ID ${group.groupName}.`,
+        description: `You paid ${amount} for an expense in group ${group.groupName}.`,
       },
     });
 
@@ -642,4 +645,51 @@ exports.verifySettlement = async (req, res) => {
     res.status(500).json({ message: "Failed to verify settlement." });
   }
 };
+
+
+// Generate and download CSV for user expenses
+exports.downloadExpensesCSV = async (req, res) => {
+  const userID = req.user.userID;
+
+  try {
+    const expenses = await prisma.expenses.findMany({
+      where: {
+        OR: [
+          { paidBy: Number(userID) }, 
+          { splits: { some: { userID: Number(userID) } } }, 
+        ],
+      },
+      include: { splits: true },
+    });
+
+    if (expenses.length === 0) {
+      return res.status(404).json({ message: 'No expenses found for the user' });
+    }
+
+    // Format CSV
+    const formattedExpenses = expenses.map(expense => ({
+      expenseID: expense.expenseID,
+      amount: expense.amount.toString(),
+      description: expense.description,
+      paidBy: expense.paidBy,
+      date: expense.date.toISOString(),
+      type: expense.type,
+      category: expense.category,
+      groupID: expense.groupID || 'N/A',
+    }));
+
+    const fields = ['expenseID', 'amount', 'description', 'paidBy', 'date', 'type', 'category', 'groupID'];
+    const json2csvParser = new Parser({ fields });
+    const csvData = json2csvParser.parse(formattedExpenses);
+
+    // Send CSV file for download
+    res.header('Content-Type', 'text/csv');
+    res.attachment(`user_expenses_${userID}.csv`);
+    res.send(csvData);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to generate CSV for user expenses' });
+  }
+};
+
 

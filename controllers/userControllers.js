@@ -69,7 +69,16 @@ exports.logIn = async (req, res) => {
     if (!isPasswordCorrect) return res.status(404).json({ message: "Invalid email or password" });
 
     const token = generateJWT(user);
-    res.status(200).json({ message: "Login successful", token});
+
+    //httpOnly cookie
+    res.cookie("token", token, {
+    httpOnly: true,
+    secure: false, 
+    sameSite: "none",
+    maxAge: 24 * 60 * 60 * 1000, 
+    });
+    
+    res.status(200).json({ message: "Login successful",userID:user.userID});
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Something went wrong" });
@@ -80,12 +89,13 @@ exports.logIn = async (req, res) => {
 exports.getLoggedInUser = async (req, res) => {
   try {
     // Get token
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    const token = req.cookies.token; ;
+   
+    // const authHeader = req.headers.authorization;
+    if (!token) {
       return res.status(401).json({ error: "Authorization token is missing or invalid" });
     }
 
-    const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, JWT_SECRET);
 
     // Fetch user with related groups, friends, expenses, and balances
@@ -201,7 +211,7 @@ exports.updateUser = async (req, res) => {
       return res.status(401).json({ error: "Authorization token is missing or invalid" });
     }
 
-    const token = authHeader.split(" ")[1];
+    const token = req.cookies.token; ;
     const decoded = jwt.verify(token, JWT_SECRET);
 
     const updateData = {};
@@ -231,7 +241,7 @@ exports.deleteUser = async (req, res) => {
       return res.status(401).json({ error: "Authorization token is missing or invalid" });
     }
 
-    const token = authHeader.split(" ")[1];
+    const token = req.cookies.token; ;
     const decoded = jwt.verify(token, JWT_SECRET);
 
     const userId = decoded.id;

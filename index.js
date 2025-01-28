@@ -1,6 +1,7 @@
 require("dotenv").config(); 
 const express = require("express");
 const session = require('express-session');
+const cookieParser = require("cookie-parser");
 const passport = require('passport');
 require('./config/passportSetup');
 const cors = require("cors");
@@ -17,6 +18,7 @@ const app = express();
 // Middleware
 app.use(express.json()); 
 app.use(cors());        
+app.use(cookieParser());
 app.use(session({ secret: process.env.SESSION_SECRET || 'secret',
    resave: false, 
    saveUninitialized: true,

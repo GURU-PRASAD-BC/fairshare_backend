@@ -2,7 +2,7 @@
 const jwt = require('jsonwebtoken');
 
 exports.isAdmin = (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1]; // Extract token from "Bearer <token>"
+  const token = req.cookies.token; 
   
   if (!token) {
     return res.status(401).json({ message: 'No token provided, authorization denied' });
