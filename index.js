@@ -17,7 +17,10 @@ const app = express();
 
 // Middleware
 app.use(express.json()); 
-app.use(cors());        
+app.use(cors({
+  origin:'http://192.168.0.126:3001',
+  credentials: true,
+}));        
 app.use(cookieParser());
 app.use(session({ secret: process.env.SESSION_SECRET || 'secret',
    resave: false, 

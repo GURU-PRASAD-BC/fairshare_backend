@@ -24,15 +24,16 @@ router.get("/google/callback",passport.authenticate("google", { failureRedirect:
     const token = jwt.sign({ id: req.user.userID, email: req.user.email, role: req.user.role }, JWT_SECRET, { expiresIn: "1d" });
     //res.status(200).json({ message: "Login successful", token });
 
-    //httpOnly cookie
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: true, 
-      sameSite: "Strict",
-      maxAge: 24 * 60 * 60 * 1000, 
-      });
+    // //httpOnly cookie
+    // res.cookie("token", token, {
+    //   httpOnly: true,
+    //   secure: false, 
+    //   sameSite: "None",
+    //   maxAge: 24 * 60 * 60 * 1000, 
+    //   });
+    // res.redirect(`${frontendURL}/redirectPage/`);
 
-    res.redirect(`${frontendURL}/redirectPage/`);
+    res.redirect(`${frontendURL}/redirectPage/?token=${token}`);
   }
 );
 
