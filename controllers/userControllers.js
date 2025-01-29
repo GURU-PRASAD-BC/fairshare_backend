@@ -92,12 +92,12 @@ exports.getLoggedInUser = async (req, res) => {
     // Get token
     //const token = req.cookies.token;
     const authHeader = req.headers.authorization;
+    const token = authHeader.split(" ")[1];
     
     if (!token) {
       return res.status(401).json({ error: "Authorization token is missing or invalid" });
     }
 
-    const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, JWT_SECRET);
 
     // Fetch user with related groups, friends, expenses, and balances
