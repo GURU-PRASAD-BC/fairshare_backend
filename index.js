@@ -18,7 +18,7 @@ const app = express();
 // Middleware
 app.use(express.json()); 
 app.use(cors({
-  origin:'http://192.168.0.126:3001',
+  origin:'*',
   credentials: true,
 }));        
 app.use(cookieParser());
