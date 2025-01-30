@@ -17,10 +17,7 @@ const app = express();
 
 // Middleware
 app.use(express.json()); 
-app.use(cors({
-  origin:'*',
-  credentials: true,
-}));        
+app.use(cors());        
 app.use(cookieParser());
 app.use(session({ secret: process.env.SESSION_SECRET || 'secret',
    resave: false, 
