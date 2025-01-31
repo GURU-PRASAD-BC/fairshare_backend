@@ -9,7 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "jwt";
 
 // Google Authentication Routes
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
-router.get("/google/callback",passport.authenticate("google", { failureRedirect: "/login" }),
+router.get("/google/callback",passport.authenticate("google", { failureRedirect: `${process.env.FRONTEND_URL }/login` }),
   (req, res) => {
     if (!req.user) {
       return res.status(401).json({ error: "Authentication failed" });

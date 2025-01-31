@@ -1,5 +1,6 @@
 const prisma = require('../config/prismaClient');
 const { Parser } = require('json2csv');
+const { logActivity } = require("../utils/notifications");
 const fs = require('fs');
 const path = require('path');
 
@@ -15,7 +16,7 @@ exports.addExpense = async (req, res) => {
   try {
     const expense = await prisma.expenses.create({
       data: {
-        amount,
+        amount: Number(amount), // Ensure amount is numeric
         description,
         paidBy,
         date: new Date(),
@@ -24,9 +25,9 @@ exports.addExpense = async (req, res) => {
         category,
         image,
         splits: {
-          create: splits.map(split => ({
+          create: splits.map((split) => ({
             userID: split.userID,
-            amount: split.amount,
+            amount: Number(split.amount), // Ensure split amount is numeric
           })),
         },
       },
@@ -46,7 +47,7 @@ exports.addExpense = async (req, res) => {
 
       if (reverseBalance) {
         // Subtract from the reverse balance to calculate the net balance
-        const netAmount = reverseBalance.amountOwed - split.amount;
+        const netAmount = Number(reverseBalance.amountOwed) - Number(split.amount);
 
         if (netAmount > 0) {
           // Update reverse balance with reduced amount
@@ -76,7 +77,9 @@ exports.addExpense = async (req, res) => {
         // If no reverse balance, update the forward balance
         await prisma.balances.update({
           where: { id: existingBalance.id },
-          data: { amountOwed: existingBalance.amountOwed + split.amount },
+          data: {
+            amountOwed: Number(existingBalance.amountOwed) + Number(split.amount),
+          },
         });
       } else {
         // Create a new balance if neither exists
@@ -84,25 +87,36 @@ exports.addExpense = async (req, res) => {
           data: {
             userID: split.userID,
             friendID: paidBy,
-            amountOwed: split.amount,
+            amountOwed: Number(split.amount),
           },
         });
       }
     }
 
     // Log activity for the payer
-    await prisma.activities.create({
-      data: {
-        userID: paidBy,
-        action: 'expense_paid',
-        description: `You paid ${amount} for an expense in group ${group.groupName}.`,
-      },
+    await logActivity({
+      userID: paidBy,
+      action: "expense_paid",
+      description: `You paid ${Number(amount)} for an expense in group ${group.groupName}.`,
+      io: req.io,
     });
+
+    // Notify each user in the split
+    for (const split of splits) {
+      if (split.userID === paidBy) continue;
+
+      await logActivity({
+        userID: split.userID,
+        action: "expense_shared",
+        description: `An expense of ${Number(split.amount)} was shared with you in group ${group.groupName}.`,
+        io: req.io,
+      });
+    }
 
     res.status(201).json(expense);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Failed to add expense' });
+    res.status(500).json({ message: "Failed to add expense" });
   }
 };
 
@@ -144,24 +158,69 @@ exports.getExpensesByGroup = async (req, res) => {
 // Get expenses by user
 exports.getUserExpenses = async (req, res) => {
   const userID = req.user.userID;
+  const { page = 1, limit = 10 } = req.query; 
 
   try {
-    const expenses = await prisma.expenses.findMany({
-      where: {
-        OR: [
-          { paidBy: Number(userID) }, 
-          { splits: { some: { userID: Number(userID) } } }, 
-        ],
-      },
-      include: { splits: true },
-    });
+    const skip = (page - 1) * limit; 
+    const take = parseInt(limit, 10);
 
-    res.status(200).json(expenses);
+    const [expenses, totalExpenses] = await Promise.all([
+      prisma.expenses.findMany({
+        where: {
+          OR: [
+            { paidBy: Number(userID) },
+            { splits: { some: { userID: Number(userID) } } },
+          ],
+        },
+        include: {
+          user: { select: { name: true } },
+          group: { select: { groupName: true } },
+          splits: { include: { user: { select: { name: true } } } },
+        },
+        skip,
+        take,
+      }),
+      prisma.expenses.count({
+        where: {
+          OR: [
+            { paidBy: Number(userID) },
+            { splits: { some: { userID: Number(userID) } } },
+          ],
+        },
+      }),
+    ]);
+
+    if (expenses.length === 0) {
+      return res.status(404).json({ message: 'No expenses found for the user' });
+    }
+
+    // Format response
+    const formattedExpenses = expenses.map((expense) => ({
+      expenseID: expense.expenseID,
+      amount: expense.amount.toString(),
+      description: expense.description,
+      paidBy: expense.user.name,
+      date: expense.date.toISOString(),
+      type: expense.type,
+      category: expense.category,
+      group: expense.group?.groupName || 'N/A',
+    }));
+
+    res.status(200).json({
+      data: formattedExpenses,
+      pagination: {
+        total: totalExpenses,
+        page: parseInt(page, 10),
+        limit: take,
+        totalPages: Math.ceil(totalExpenses / take),
+      },
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Failed to fetch user expenses' });
   }
 };
+
 
 // Delete an expense
 exports.deleteExpense = async (req, res) => {
@@ -416,21 +475,19 @@ exports.settleExpense = async (req, res) => {
         },
       });
 
-      // Log settlement activity
-      await prisma.activities.create({
-        data: {
-          userID,
-          action: 'settle_expense',
-          description: `You settled ${settlementAmount} with friend ${friend.name}.`,
-        },
+      // Log & Notify settlement activity
+      await logActivity({
+        userID: userID,
+        action: 'settle_expense',
+        description: `You settled ${settlementAmount} with friend ${friend.name}.`,
+        io: req.io,
       });
 
-      await prisma.activities.create({
-        data: {
-          userID: friendID,
-          action: 'settle_expense',
-          description: `Your friend settled ${settlementAmount} with you.`,
-        },
+      await logActivity({
+        userID: friendID,
+        action: 'settle_expense',
+        description: `Your friend settled ${settlementAmount} with you.`,
+        io: req.io,
       });
 
       return res.status(200).json({ message: "Balance settled successfully.", balance: newBalance });
@@ -506,13 +563,12 @@ exports.settleExpense = async (req, res) => {
           },
         });
 
-        // Log settlement activity
-        await prisma.activities.create({
-          data: {
-            userID,
-            action: 'settle_group_expense',
-            description: `You settled ${settlementAmount} in group ${group.groupName}.`,
-          },
+        // Log and notify settlement activity
+        await logActivity({
+          userID: userID,
+          action: 'settle_group_expense',
+          description: `You settled ${settlementAmount} in group ${group.groupName}.`,
+          io: req.io,
         });
 
         return res.status(200).json({ message: "Group balance settled successfully." });
@@ -565,12 +621,11 @@ exports.settleAllOwes = async (req, res) => {
     await Promise.all(settlePromises);
 
     // Log activity for the payer
-    await prisma.activities.create({
-      data: {
-        userID: userID,
-        action: 'settle_all_expenses',
-        description: `You settled all outstanding debts.`,
-      },
+    await logActivity({
+      userID: userID,
+      action: 'settle_all_expenses',
+      description: `You settled all outstanding debts.`,
+      io: req.io,
     });
 
     res.status(200).json({ message: 'All outstanding debts have been settled, and splits have been removed.' });
@@ -655,11 +710,15 @@ exports.downloadExpensesCSV = async (req, res) => {
     const expenses = await prisma.expenses.findMany({
       where: {
         OR: [
-          { paidBy: Number(userID) }, 
-          { splits: { some: { userID: Number(userID) } } }, 
+          { paidBy: Number(userID) },
+          { splits: { some: { userID: Number(userID) } } },
         ],
       },
-      include: { splits: true },
+      include: {
+        user: { select: { name: true } }, 
+        group: { select: { groupName: true } }, 
+        splits: { include: { user: { select: { name: true } } } }, 
+      },
     });
 
     if (expenses.length === 0) {
@@ -667,18 +726,18 @@ exports.downloadExpensesCSV = async (req, res) => {
     }
 
     // Format CSV
-    const formattedExpenses = expenses.map(expense => ({
+    const formattedExpenses = expenses.map((expense) => ({
       expenseID: expense.expenseID,
       amount: expense.amount.toString(),
       description: expense.description,
-      paidBy: expense.paidBy,
+      paidBy: expense.user.name, 
       date: expense.date.toISOString(),
       type: expense.type,
       category: expense.category,
-      groupID: expense.groupID || 'N/A',
+      group: expense.group?.groupName || 'N/A', 
     }));
 
-    const fields = ['expenseID', 'amount', 'description', 'paidBy', 'date', 'type', 'category', 'groupID'];
+    const fields = ['expenseID', 'amount', 'description', 'paidBy', 'date', 'type', 'category', 'group'];
     const json2csvParser = new Parser({ fields });
     const csvData = json2csvParser.parse(formattedExpenses);
 
@@ -691,5 +750,3 @@ exports.downloadExpensesCSV = async (req, res) => {
     res.status(500).json({ message: 'Failed to generate CSV for user expenses' });
   }
 };
-
-

@@ -1,6 +1,7 @@
 // controllers/adminController.js
 const prisma = require('../config/prismaClient');
 const { sendMail } = require("../utils/mailer");
+const { logActivity } = require("../utils/notifications");
 
 // User Management
 exports.getAllUsers = async (req, res) => {
@@ -12,7 +13,7 @@ exports.getAllUsers = async (req, res) => {
         email: true,
         image: true,
         role: true,
-        isBlocked:true,
+        isBlocked: true,
       }
     });
     res.status(200).json(users);
@@ -25,6 +26,9 @@ exports.blockUser = async (req, res) => {
   const { userId } = req.params;
 
   try {
+    if (req.user.role == 'ADMIN') {
+      return res.status(403).json({ error: "You can't block another admin" });
+    }
     // Block the user
     const user = await prisma.user.update({
       where: { userID: parseInt(userId) },
@@ -35,21 +39,36 @@ exports.blockUser = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Notify the user's friends about the block
+    // Log activity for the blocked user
+    await logActivity({
+      userID: user.userID,
+      action: "account_blocked",
+      description: `Your account has been blocked.`,
+      io: req.io,
+    });
+
+    // Log activity for the admin
+    await logActivity({
+      userID: req.user.userID,
+      action: "block_user",
+      description: `You blocked user ${user.name}.`,
+      io: req.io,
+    });
+
+    // Notify user's friends
     const friends = await prisma.friends.findMany({
       where: { OR: [{ userID: parseInt(userId) }, { friendID: parseInt(userId) }] },
     });
 
-    if (friends.length > 0) {
-      const activities = friends.map((friend) => ({
+    for (const friend of friends) {
+      await logActivity({
         userID: friend.userID === parseInt(userId)
           ? parseInt(friend.friendID)
           : parseInt(friend.userID),
-        action: "User Blocked",
+        action: "friend_blocked",
         description: `${user.name} has been blocked.`,
-      }));
-
-      await prisma.activities.createMany({ data: activities });
+        io: req.io,
+      });
     }
 
     // Send email to the user
@@ -84,21 +103,36 @@ exports.unblockUser = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Notify the user's friends about the unblock
+    // Log activity for the unblocked user
+    await logActivity({
+      userID: user.userID,
+      action: "account_unblocked",
+      description: `Your account has been unblocked.`,
+      io: req.io,
+    });
+
+    // Log activity for the admin
+    await logActivity({
+      userID: req.user.userID,
+      action: "unblock_user",
+      description: `You unblocked user ${user.name}.`,
+      io: req.io,
+    });
+
+    // Notify user's friends
     const friends = await prisma.friends.findMany({
       where: { OR: [{ userID: parseInt(userId) }, { friendID: parseInt(userId) }] },
     });
 
-    if (friends.length > 0) {
-      const activities = friends.map((friend) => ({
-        userID: friend.userID === parseInt(userId) 
-          ? parseInt(friend.friendID) 
+    for (const friend of friends) {
+      await logActivity({
+        userID: friend.userID === parseInt(userId)
+          ? parseInt(friend.friendID)
           : parseInt(friend.userID),
-        action: "User Unblocked",
+        action: "friend_unblocked",
         description: `${user.name} has been unblocked.`,
-      }));
-
-      await prisma.activities.createMany({ data: activities });
+        io: req.io,
+      });
     }
 
     // Send email to the user
@@ -122,28 +156,19 @@ exports.deleteUser = async (req, res) => {
   const { userId } = req.params;
 
   try {
-    const expenseCount = await prisma.expenses.count({
-      where: { paidBy: parseInt(userId) },
-    });
-    const splitCount = await prisma.expenseSplit.count({
-      where: { userID: parseInt(userId) },
-    });
-    const balanceCount = await prisma.balances.count({
-      where: {
-        OR: [
-          { friendID: parseInt(userId) },
-          { userID: parseInt(userId) }, 
-        ],
-      },
-    });
-
-    if (expenseCount > 0 || splitCount > 0 || balanceCount>0) {
-      return res.status(403).json({
-        message: "User cannot be deleted because they are involved in some expenses (or) transactions.",
-      });
+    if (req.user.role == 'ADMIN') {
+      return res.status(403).json({ error: "You can't delete another admin" });
     }
 
-    // Delete all related entities in the correct order
+    const user = await prisma.user.findUnique({
+      where: { userID: parseInt(userId) },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Delete the user and related data
     await prisma.$transaction([
       prisma.friends.deleteMany({ where: { OR: [{ userID: parseInt(userId) }, { friendID: parseInt(userId) }] } }),
       prisma.groupMember.deleteMany({ where: { userID: parseInt(userId) } }),
@@ -152,22 +177,13 @@ exports.deleteUser = async (req, res) => {
       prisma.user.delete({ where: { userID: parseInt(userId) } }),
     ]);
 
-    // Send email to the user
-    const user = await prisma.user.findUnique({
-      where: { userID: parseInt(userId) },
+    // Log activity for the admin
+    await logActivity({
+      userID: req.user.userID,
+      action: "delete_user",
+      description: `You deleted user ${user.name}.`,
+      io: req.io,
     });
-
-    if (user) {
-      const subject = "Account Deleted on FinestShare";
-      const htmlContent = `
-        <p>Dear ${user.name},</p>
-        <p>Your account has been deleted from FinestShare by the Team.</p>
-        <p>Support Email: finestshare@gmail.com</p>
-        <br />
-        <p>Thank you,<br />FinestShare Team</p>
-      `;
-      await sendMail(user.email, subject, htmlContent);
-    }
 
     res.status(200).json({ message: "User deleted successfully" });
   } catch (error) {
@@ -185,19 +201,21 @@ exports.promoteUser = async (req, res) => {
       data: { role: 'ADMIN' },
     });
 
-    const admins = await prisma.user.findMany({
-      where: { role: 'ADMIN' },
-      select: { userID: true }, 
+    // Log activity for the promoted user
+    await logActivity({
+      userID: user.userID,
+      action: "promoted_to_admin",
+      description: `Congratulations! You have been promoted to an admin role.`,
+      io: req.io,
     });
 
-    // Create activity records for all admins
-    const adminActivities = admins.map((admin) => ({
-      userID: admin.userID,
-      action: "User Promotion",
-      description: `${user.name} has been promoted to an admin.`,
-    }));
-
-    await prisma.activities.createMany({ data: adminActivities });
+    // Log activity for the admin
+    await logActivity({
+      userID: req.user.userID,
+      action: "promote_user",
+      description: `You promoted user ${user.name} to admin.`,
+      io: req.io,
+    });
 
     res.status(200).json({ message: `User ${user.name} promoted to admin` });
   } catch (error) {

@@ -137,6 +137,7 @@ model Activities {
   action      String
   timestamp   DateTime @default(now())
   description String
+  isRead      Boolean  @default(false)
   user        User     @relation(fields: [userID], references: [userID])
 }
 

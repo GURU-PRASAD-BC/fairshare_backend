@@ -35,6 +35,12 @@ exports.logActivity = async (req, res) => {
       },
     });
 
+    // Notify user in real time if online
+    const socketID = onlineUsers.get(userID); 
+    if (socketID) {
+      io.to(socketID).emit("newActivity", newActivity);
+    }
+
     res.status(201).json({ message: "Activity logged successfully", activity: newActivity });
   } catch (error) {
     console.error("Error logging activity:", error);
