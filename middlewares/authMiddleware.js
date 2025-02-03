@@ -1,5 +1,6 @@
 // middlewares/authMiddleware.js
 const jwt = require('jsonwebtoken');
+const prisma = require('../config/prismaClient');
 
 exports.isAdmin = async (req, res, next) => {
   //get token
@@ -21,14 +22,13 @@ exports.isAdmin = async (req, res, next) => {
     req.user = user;
     
     // Check if user is an admin
-    if (req.user.role === 'ADMIN') {
-      
+    if (req.user.role == 'ADMIN') {
       next();
     } else {
       res.status(403).json({ message: 'Access denied, admin only' });
     }
   } catch (error) {
-    res.status(401).json({ message: 'Invalid token, authorization denied' });
+    res.status(401).json({ message: 'Invalid token, authorization denied'});
   }
 };
 
