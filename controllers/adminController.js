@@ -37,7 +37,7 @@ exports.blockUser = async (req, res) => {
     }
 
     if (user.role == 'ADMIN') {
-      return res.status(403).json({ error: "You can't delete another admin" });
+      return res.status(403).json({ error: "You can't block another admin" });
     }
 
     // Log activity for the blocked user
