@@ -26,9 +26,6 @@ exports.blockUser = async (req, res) => {
   const { userId } = req.params;
 
   try {
-    if (req.user.role == 'ADMIN') {
-      return res.status(403).json({ error: "You can't block another admin" });
-    }
     // Block the user
     const user = await prisma.user.update({
       where: { userID: parseInt(userId) },
@@ -37,6 +34,10 @@ exports.blockUser = async (req, res) => {
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
+    }
+
+    if (user.role == 'ADMIN') {
+      return res.status(403).json({ error: "You can't delete another admin" });
     }
 
     // Log activity for the blocked user
@@ -156,16 +157,16 @@ exports.deleteUser = async (req, res) => {
   const { userId } = req.params;
 
   try {
-    if (req.user.role == 'ADMIN') {
-      return res.status(403).json({ error: "You can't delete another admin" });
-    }
-
     const user = await prisma.user.findUnique({
       where: { userID: parseInt(userId) },
     });
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
+    }
+
+    if (user.role == 'ADMIN') {
+      return res.status(403).json({ error: "You can't delete another admin" });
     }
 
     // Delete the user and related data

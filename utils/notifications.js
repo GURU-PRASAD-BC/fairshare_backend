@@ -40,7 +40,8 @@ async function getUnreadActivities(userID) {
 
     // Mark all unread activities as read
     if (unreadActivities.length > 0) {
-      await prisma.activities.updateMany({
+      //findMany
+      await prisma.activities.updateMany({ 
         where: { userID, isRead: false },
         data: { isRead: true },
       });

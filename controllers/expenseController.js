@@ -4,6 +4,61 @@ const { logActivity } = require("../utils/notifications");
 const fs = require('fs');
 const path = require('path');
 
+//split-calc
+exports.splitexpense=async (req, res) => {
+  try {
+      const { totalAmount, userSplits, type } = req.body;
+      
+      if (!totalAmount || !userSplits || !type) {
+          return res.status(400).json({ message: 'Missing required fields' });
+      }
+
+      let calculatedSplits = [];
+      let sumOfSplits = 0;
+
+      switch (type) {
+          case 'equal': {
+              const splitAmount = (totalAmount / userSplits.length).toFixed(2);
+              calculatedSplits = userSplits.map(userID => ({ userID, amount: parseFloat(splitAmount) }));
+              sumOfSplits = calculatedSplits.reduce((sum, split) => sum + split.amount, 0);
+              break;
+          }
+          case 'exact': {
+              sumOfSplits = userSplits.reduce((sum, split) => sum + split.amount, 0);
+              calculatedSplits = userSplits;
+              break;
+          }
+          case 'percentage': {
+              calculatedSplits = userSplits.map(({ userID, percentage }) => {
+                  const amount = (totalAmount * (percentage / 100)).toFixed(2);
+                  return { userID, amount: parseFloat(amount) };
+              });
+              sumOfSplits = calculatedSplits.reduce((sum, split) => sum + split.amount, 0);
+              break;
+          }
+          case '+/-': {
+              const baseAmount = (totalAmount / userSplits.length).toFixed(2);
+              calculatedSplits = userSplits.map(({ userID, adjustment }) => {
+                  return { userID, amount: parseFloat((parseFloat(baseAmount) + adjustment).toFixed(2)) };
+              });
+              sumOfSplits = calculatedSplits.reduce((sum, split) => sum + split.amount, 0);
+              break;
+          }
+          default:
+              return res.status(400).json({ message: 'Invalid split type' });
+      }
+
+      if (parseFloat(sumOfSplits.toFixed(2)) !== parseFloat(totalAmount.toFixed(2))) {
+          return res.status(400).json({ message: 'Calculated split does not match total amount' });
+      }
+
+      return res.status(200).json({ splits: calculatedSplits });
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
 // Add an expense
 exports.addExpense = async (req, res) => {
   const { amount, description, paidBy, groupID, type, category, splits, image } = req.body;

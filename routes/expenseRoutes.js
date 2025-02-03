@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authenticateUser = require('../middlewares/validateUser');
 const {
+  splitexpense,
   addExpense,
   getExpensesByGroup,
   getUserExpenses,
@@ -16,6 +17,9 @@ const {
   settleAllOwes,
   downloadExpensesCSV
 } = require('../controllers/expenseController');
+
+// split expense
+router.post('/split', authenticateUser, splitexpense);
 
 // Add an expense
 router.post('/add', authenticateUser, addExpense);
