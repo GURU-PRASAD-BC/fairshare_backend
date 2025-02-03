@@ -32,7 +32,7 @@ app.use(session({ secret: process.env.SESSION_SECRET || 'secret',
 })); 
 
 // Logging
-app.use(morgan("dev"));  
+//app.use(morgan("dev"));  
 
 // Initialize Passport
 app.use(passport.initialize());
