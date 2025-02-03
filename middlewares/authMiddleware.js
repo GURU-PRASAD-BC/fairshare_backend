@@ -1,7 +1,7 @@
 // middlewares/authMiddleware.js
 const jwt = require('jsonwebtoken');
 
-exports.isAdmin = (req, res, next) => {
+exports.isAdmin = async (req, res, next) => {
   //get token
   // const token = req.cookies.token; 
   const token = req.headers.authorization?.split(' ')[1]; 
@@ -12,10 +12,17 @@ exports.isAdmin = (req, res, next) => {
   try {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // Attach user data to request object
+    req.userID = decoded.id;
+
+    const user = await prisma.user.findUnique({ where: { userID: req.userID } });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    req.user = user;
     
     // Check if user is an admin
     if (req.user.role === 'ADMIN') {
+      
       next();
     } else {
       res.status(403).json({ message: 'Access denied, admin only' });

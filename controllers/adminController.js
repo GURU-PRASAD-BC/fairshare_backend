@@ -114,7 +114,7 @@ exports.unblockUser = async (req, res) => {
 
     // Log activity for the admin
     await logActivity({
-      userID: req.user.userID,
+      userID: req.userID,
       action: "unblock_user",
       description: `You unblocked user ${user.name}.`,
       io: req.io,
