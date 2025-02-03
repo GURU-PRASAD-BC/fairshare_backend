@@ -26,10 +26,9 @@ exports.blockUser = async (req, res) => {
   const { userId } = req.params;
 
   try {
-    // Block the user
-    const user = await prisma.user.update({
+    //Get User
+    const user = await prisma.user.findUnique({
       where: { userID: parseInt(userId) },
-      data: { isBlocked: true },
     });
 
     if (!user) {
@@ -39,6 +38,12 @@ exports.blockUser = async (req, res) => {
     if (user.role == 'ADMIN') {
       return res.status(403).json({ error: "You can't block another admin" });
     }
+
+    // Block the user
+    const block = await prisma.user.update({
+      where: { userID: parseInt(userId) },
+      data: { isBlocked: true },
+    });
 
     // Log activity for the blocked user
     await logActivity({
