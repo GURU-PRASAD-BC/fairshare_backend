@@ -19,7 +19,6 @@ passport.use(new GoogleStrategy({
     callbackURL: "https://finestshare-backend.onrender.com/auth/google/callback",
 }, async (accessToken, refreshToken, profile, done) => {
     try {
-        console.log(accessToken);
         let user = await prisma.user.findUnique({ where: { email: profile.emails[0].value } });
         if (!user) {
             user = await prisma.user.create({
