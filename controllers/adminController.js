@@ -34,7 +34,7 @@ exports.blockUser = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-
+    
     if (user.role == 'ADMIN') {
       return res.status(403).json({ error: "You can't block another admin" });
     }
